@@ -19,6 +19,8 @@ function convertStatus(statusDictionary) {
     prepared: stringToBool(statusDictionary.prepared),
     previewing: stringToBool(statusDictionary.previewing),
     showing: stringToBool(statusDictionary.showing),
+    muted: boolToNumberString(statusDictionary.muted),
+    recording: boolToNumberString(statusDictionary.recording),
     lightEnabled: stringToBool(statusDictionary.lightEnabled),
     canOpenSettings: stringToBool(statusDictionary.canOpenSettings),
     canEnableLight: stringToBool(statusDictionary.canEnableLight),
@@ -163,6 +165,21 @@ return {
   },
   disableLight: function(callback) {
     cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'disableLight', []);
+  },
+  muteSound: function(callback) {
+    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'muteSound', []);
+  },  
+  unmuteSound: function(callback) {
+    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'unmuteSound', []);
+  },  
+  record: function(callback) {
+    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'record', []);
+  },  
+  stopRecording: function(callback) {
+    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'stopRecording', []);
+  },  
+  pauseRecording: function(callback) {
+    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'pauseRecording', []);
   },
   useCamera: function(index, callback) {
     cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'useCamera', [index]);

@@ -2,7 +2,7 @@ import Foundation
 import AVFoundation
 
 @objc(MediaCapture)
-class MediaCapture : CDVPlugin {
+class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
     
     class CameraView: UIView {
         var videoPreviewLayer:AVCaptureVideoPreviewLayer?
@@ -331,16 +331,25 @@ class MediaCapture : CDVPlugin {
     }
 
     @objc func record() {
+        paused = false
+        recording = true
         connection = videoFileOutput.connectionWithMediaType(AVMediaTypeVideo)
         captureSession.addInput(videoFileOutput)
         captureSession.startRunning()
     }
 
     @objc func stopRecording() {
+        recording = false
         captureSession.stopRunning()
+
+        let video = videoFileOutput.
+
+        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: status)
+        commandDelegate!.send(pluginResult, callbackId:command.callbackId)
     }
 
     @objc func pauseRecording() {
+        paused = true
         captureSession.removeInput(videoFileOutput)
     }
 
