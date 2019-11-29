@@ -54,12 +54,12 @@ class MediaCapture : CDVPlugin {
 
     var captureVideoPreviewLayer:AVCaptureVideoPreviewLayer?
     var videoFileOutput: AVCaptureMovieFileOutput?
-
+        
     var currentCamera: Int = 0;
     var frontCamera: AVCaptureDevice?
     var backCamera: AVCaptureDevice?
     var microphone: AVCaptureDevice?
-    var connection: AVMediaTypeVideo?
+    var connection: AVMediaType?
 
     var paused: Bool = false
     var recording: Bool = false
@@ -148,10 +148,10 @@ class MediaCapture : CDVPlugin {
                 let availableAudioDevices = AVCaptureDevice.devices(for: AVMediaType.audio)
                 microphone = availableAudioDevices[0]
                 
-                videoFileOutput.connection(with: .video)
-                if videoFileOutput.availableVideoCodecTypes.contains(.h264) {
+                let connection = videoFileOutput!.connection(with: .video)
+                if videoFileOutput!.availableVideoCodecTypes.contains(.h264) {
                     // Use the H.264 codec to encode the video.
-                    videoFileOutput.setOutputSettings([AVVideoCodecKey: AVVideoCodecType.h264], for: connection!)
+                    videoFileOutput!.setOutputSettings([AVVideoCodecKey: AVVideoCodecType.h264], for: connection!)
                 }
 
                 // older iPods have no back camera
@@ -325,23 +325,26 @@ class MediaCapture : CDVPlugin {
     @objc func unmuteSound() {
         muted = false
         captureSession!.beginConfiguration()
-        let audioInput = try self.createCaptureAudioDeviceInput()
-        captureSession!.addInput(audioInput)
-        captureSession!.commitConfiguration()
+        do {
+            let audioInput = try self.createCaptureAudioDeviceInput()
+            captureSession!.addInput(audioInput)
+            captureSession!.commitConfiguration()
+        } catch {
+            print("Unexpected error: \(error).")
+        }
     }
 
     @objc func record() {
-        connection = videoFileOutput.connectionWithMediaType(AVMediaTypeVideo)
-        captureSession.addInput(videoFileOutput)
-        captureSession.startRunning()
+        captureSession!.addOutput(videoFileOutput!)
+        captureSession!.startRunning()
     }
 
     @objc func stopRecording() {
-        captureSession.stopRunning()
+        captureSession!.stopRunning()
     }
 
     @objc func pauseRecording() {
-        captureSession.removeInput(videoFileOutput)
+        captureSession!.removeOutput(videoFileOutput!)
     }
 
     // backCamera is 0, frontCamera is 1
@@ -495,7 +498,7 @@ class MediaCapture : CDVPlugin {
 
     @objc func openSettings(_ command: CDVInvokedUrlCommand) {
         if #available(iOS 10.0, *) {
-            guard let settingsUrl = URL(string: UIApplicationOpenSettingsURLString) else {
+            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
             return
         }
         if UIApplication.shared.canOpenURL(settingsUrl) {
@@ -508,7 +511,7 @@ class MediaCapture : CDVPlugin {
         } else {
             // pre iOS 10.0
             if #available(iOS 8.0, *) {
-                UIApplication.shared.openURL(NSURL(string: UIApplicationOpenSettingsURLString)! as URL)
+                UIApplication.shared.openURL(NSURL(string: UIApplication.openSettingsURLString)! as URL)
                 self.getStatus(command)
             } else {
                 self.sendErrorCode(command: command, error: MediaCaptureError.open_settings_unavailable)

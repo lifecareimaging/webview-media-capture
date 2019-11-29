@@ -97,14 +97,15 @@ var cordovaModule = module;
             var createMediaCaptureAdapter = __webpack_require__(3);
 
             // pass in global cordova object to expose cordova.exec
-            var mediaCaptureAdapter = createMediaCaptureAdapter(globalCordova);
-            cordovaModule.exports = mediaCaptureAdapter;
+            var MediaCaptureAdapter = createMediaCaptureAdapter(globalCordova);
+            cordovaModule.exports = MediaCaptureAdapter;
 
 
             /***/
         }),
 
     /***/ 3:
+    /***/ (function(module, exports) {
     /***/ module.exports = function createMediaCapture(cordova) {
 
             function stringToBool(string) {
@@ -304,7 +305,8 @@ var cordovaModule = module;
                     cordova.exec(doneCallback(callback), null, 'MediaCapture', 'getStatus', []);
                 }
             };
-        },
+        };
+    }),
 
         /***/ 4:
         /***/ (function (module, exports) {
