@@ -148,6 +148,8 @@ class MediaCapture : CDVPlugin {
                 let availableAudioDevices = AVCaptureDevice.devices(for: AVMediaType.audio)
                 microphone = availableAudioDevices[0]
                 
+                videoFileOutput = AVCaptureMovieFileOutput()
+
                 let connection = videoFileOutput!.connection(with: .video)
                 if videoFileOutput!.availableVideoCodecTypes.contains(.h264) {
                     // Use the H.264 codec to encode the video.
