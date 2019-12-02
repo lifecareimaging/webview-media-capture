@@ -51,10 +51,12 @@ class MediaCapture : CDVPlugin {
 
     var cameraView: CameraView!
     var captureSession:AVCaptureSession?
+    var commandCallbackId: Int = 0;
 
     var captureVideoPreviewLayer:AVCaptureVideoPreviewLayer?
     var videoFileOutput: AVCaptureMovieFileOutput?
-        
+    var outputFileUrl: NSURL?
+
     var currentCamera: Int = 0;
     var frontCamera: AVCaptureDevice?
     var backCamera: AVCaptureDevice?
@@ -147,7 +149,7 @@ class MediaCapture : CDVPlugin {
 
                 let availableAudioDevices = AVCaptureDevice.devices(for: AVMediaType.audio)
                 microphone = availableAudioDevices[0]
-                
+                                
                 videoFileOutput = AVCaptureMovieFileOutput()
 
                 let connection = videoFileOutput!.connection(with: .video)
@@ -155,6 +157,12 @@ class MediaCapture : CDVPlugin {
                     // Use the H.264 codec to encode the video.
                     videoFileOutput!.setOutputSettings([AVVideoCodecKey: AVVideoCodecType.h264], for: connection!)
                 }
+
+                let documentsPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as! NSString
+                let outputPath = "\(documentsPath)/video.mp4"
+
+                outputFileUrl = NSURL(fileURLWithPath: outputPath)
+                captureSession!.addOutput(videoFileOutput!)
 
                 // older iPods have no back camera
                 if(backCamera == nil){
@@ -316,15 +324,16 @@ class MediaCapture : CDVPlugin {
         self.getStatus(command)
     }
 
-    @objc func muteSound() {
+    @objc func muteSound(_ command: CDVInvokedUrlCommand) {
         muted = true
         captureSession!.beginConfiguration()
         let currentAudioInput = captureSession?.inputs[1] as! AVCaptureDeviceInput
         captureSession!.removeInput(currentAudioInput)
         captureSession!.commitConfiguration()
+        self.getStatus(command)
     }
 
-    @objc func unmuteSound() {
+    @objc func unmuteSound(_ command: CDVInvokedUrlCommand) {
         muted = false
         captureSession!.beginConfiguration()
         do {
@@ -334,19 +343,40 @@ class MediaCapture : CDVPlugin {
         } catch {
             print("Unexpected error: \(error).")
         }
+        self.getStatus(command)
     }
 
-    @objc func record() {
-        captureSession!.addOutput(videoFileOutput!)
-        captureSession!.startRunning()
+    @objc func record(_ command: CDVInvokedUrlCommand) {
+        //captureSession!.startRunning()
+        videoFileOutput.startRecording(outputFileUrl, recordingDelegate: self)
+        self.getStatus(command)
     }
 
-    @objc func stopRecording() {
-        captureSession!.stopRunning()
+    @objc func stopRecording(_ command: CDVInvokedUrlCommand) {
+        //captureSession!.stopRunning()
+        commandCallbackId = command.callbackId
+        videoFileOutput.stopRecording()
     }
 
-    @objc func pauseRecording() {
-        captureSession!.removeOutput(videoFileOutput!)
+    @objc func pauseRecording(_ command: CDVInvokedUrlCommand) {
+        videoFileOutput.pauseRecording()
+        self.getStatus(command)
+    }
+
+    @objc func resumeRecording(_ command: CDVInvokedUrlCommand) {
+        videoFileOutput.resumeRecording()
+        self.getStatus(command)
+    }
+
+    func captureOutput(captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAtURL outputFileURL: NSURL!, fromConnections connections: [AnyObject]!, error: NSError!) {
+        let imageDataFromURL = NSData(contentsOfURL: outputFileURL)
+
+        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: imageDataFromURL)
+        commandDelegate!.send(pluginResult, callbackId: commandCallbackId)
+    }
+
+    func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
+        println("capture output: started recording to \(fileURL)")
     }
 
     // backCamera is 0, frontCamera is 1
@@ -487,6 +517,7 @@ class MediaCapture : CDVPlugin {
             "showing": boolToNumberString(bool: showing),
             "muted": boolToNumberString(bool: muted),
             "recording": boolToNumberString(bool: recording),
+            "paused": boolToNumberString(bool: paused),
             "lightEnabled": boolToNumberString(bool: lightEnabled),
             "canOpenSettings": boolToNumberString(bool: canOpenSettings),
             "canEnableLight": boolToNumberString(bool: canEnableLight),

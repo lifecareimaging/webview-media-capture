@@ -127,6 +127,9 @@ var cordovaModule = module;
                     prepared: stringToBool(statusDictionary.prepared),
                     previewing: stringToBool(statusDictionary.previewing),
                     showing: stringToBool(statusDictionary.showing),
+                    muted: stringToBool(statusDictionary.muted),
+                    recording: stringToBool(statusDictionary.recording),
+                    paused: stringToBool(statusDictionary.paused),
                     lightEnabled: stringToBool(statusDictionary.lightEnabled),
                     canOpenSettings: stringToBool(statusDictionary.canOpenSettings),
                     canEnableLight: stringToBool(statusDictionary.canEnableLight),
@@ -274,6 +277,24 @@ var cordovaModule = module;
                 },
                 useCamera: function (index, callback) {
                     cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'useCamera', [index]);
+                },
+                unmuteSound: function (callback) {
+                    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'unmuteSound', []);
+                },
+                muteSound: function (callback) {
+                    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'muteSound', []);
+                },
+                record: function (callback) {
+                    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'record', []);
+                },
+                stopRecording: function (callback) {
+                    cordova.exec(callback, errorCallback(callback), 'MediaCapture', 'stopRecording', []);
+                },
+                pauseRecording: function (callback) {
+                    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'pauseRecording', []);
+                },
+                resumeRecording: function (callback) {
+                    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'resumeRecording', []);
                 },
                 useFrontCamera: function (callback) {
                     var frontCamera = 1;
