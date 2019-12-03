@@ -431,10 +431,6 @@ public class MediaCapture extends CordovaPlugin {
         previewing = true;
     }
 
-    @Override
-    public void possibleResultPoints(List<ResultPoint> list) {
-    }
-
     // ---- BEGIN EXTERNAL API ----
     private void prepare(final CallbackContext callbackContext) {
         if(!prepared) {
