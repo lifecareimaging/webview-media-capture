@@ -51,15 +51,17 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
 
     var cameraView: CameraView!
     var captureSession:AVCaptureSession?
+    var commandCallbackId: Int = 0;
 
     var captureVideoPreviewLayer:AVCaptureVideoPreviewLayer?
     var videoFileOutput: AVCaptureMovieFileOutput?
+    var outputFileUrl: NSURL?
 
     var currentCamera: Int = 0;
     var frontCamera: AVCaptureDevice?
     var backCamera: AVCaptureDevice?
     var microphone: AVCaptureDevice?
-    var connection: AVMediaTypeVideo?
+    var connection: AVMediaType?
 
     var paused: Bool = false
     var recording: Bool = false
@@ -147,12 +149,20 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
 
                 let availableAudioDevices = AVCaptureDevice.devices(for: AVMediaType.audio)
                 microphone = availableAudioDevices[0]
-                
-                videoFileOutput.connection(with: .video)
-                if videoFileOutput.availableVideoCodecTypes.contains(.h264) {
+                                
+                videoFileOutput = AVCaptureMovieFileOutput()
+
+                let connection = videoFileOutput!.connection(with: .video)
+                if videoFileOutput!.availableVideoCodecTypes.contains(.h264) {
                     // Use the H.264 codec to encode the video.
-                    videoFileOutput.setOutputSettings([AVVideoCodecKey: AVVideoCodecType.h264], for: connection!)
+                    videoFileOutput!.setOutputSettings([AVVideoCodecKey: AVVideoCodecType.h264], for: connection!)
                 }
+
+                let documentsPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as! NSString
+                let outputPath = "\(documentsPath)/video.mp4"
+
+                outputFileUrl = NSURL(fileURLWithPath: outputPath)
+                captureSession!.addOutput(videoFileOutput!)
 
                 // older iPods have no back camera
                 if(backCamera == nil){
@@ -314,22 +324,29 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
         self.getStatus(command)
     }
 
-    @objc func muteSound() {
+    @objc func muteSound(_ command: CDVInvokedUrlCommand) {
         muted = true
         captureSession!.beginConfiguration()
         let currentAudioInput = captureSession?.inputs[1] as! AVCaptureDeviceInput
         captureSession!.removeInput(currentAudioInput)
         captureSession!.commitConfiguration()
+        self.getStatus(command)
     }
 
-    @objc func unmuteSound() {
+    @objc func unmuteSound(_ command: CDVInvokedUrlCommand) {
         muted = false
         captureSession!.beginConfiguration()
-        let audioInput = try self.createCaptureAudioDeviceInput()
-        captureSession!.addInput(audioInput)
-        captureSession!.commitConfiguration()
+        do {
+            let audioInput = try self.createCaptureAudioDeviceInput()
+            captureSession!.addInput(audioInput)
+            captureSession!.commitConfiguration()
+        } catch {
+            print("Unexpected error: \(error).")
+        }
+        self.getStatus(command)
     }
 
+<<<<<<< HEAD
     @objc func record() {
         paused = false
         recording = true
@@ -351,6 +368,39 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
     @objc func pauseRecording() {
         paused = true
         captureSession.removeInput(videoFileOutput)
+=======
+    @objc func record(_ command: CDVInvokedUrlCommand) {
+        //captureSession!.startRunning()
+        videoFileOutput.startRecording(outputFileUrl, recordingDelegate: self)
+        self.getStatus(command)
+    }
+
+    @objc func stopRecording(_ command: CDVInvokedUrlCommand) {
+        //captureSession!.stopRunning()
+        commandCallbackId = command.callbackId
+        videoFileOutput.stopRecording()
+    }
+
+    @objc func pauseRecording(_ command: CDVInvokedUrlCommand) {
+        videoFileOutput.pauseRecording()
+        self.getStatus(command)
+    }
+
+    @objc func resumeRecording(_ command: CDVInvokedUrlCommand) {
+        videoFileOutput.resumeRecording()
+        self.getStatus(command)
+    }
+
+    func captureOutput(captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAtURL outputFileURL: NSURL!, fromConnections connections: [AnyObject]!, error: NSError!) {
+        let imageDataFromURL = NSData(contentsOfURL: outputFileURL)
+
+        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: imageDataFromURL)
+        commandDelegate!.send(pluginResult, callbackId: commandCallbackId)
+    }
+
+    func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
+        println("capture output: started recording to \(fileURL)")
+>>>>>>> 7a59f291f7fa856d204db23b18dd44c77a18c64c
     }
 
     // backCamera is 0, frontCamera is 1
@@ -491,6 +541,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
             "showing": boolToNumberString(bool: showing),
             "muted": boolToNumberString(bool: muted),
             "recording": boolToNumberString(bool: recording),
+            "paused": boolToNumberString(bool: paused),
             "lightEnabled": boolToNumberString(bool: lightEnabled),
             "canOpenSettings": boolToNumberString(bool: canOpenSettings),
             "canEnableLight": boolToNumberString(bool: canEnableLight),
@@ -504,7 +555,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
 
     @objc func openSettings(_ command: CDVInvokedUrlCommand) {
         if #available(iOS 10.0, *) {
-            guard let settingsUrl = URL(string: UIApplicationOpenSettingsURLString) else {
+            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
             return
         }
         if UIApplication.shared.canOpenURL(settingsUrl) {
@@ -517,7 +568,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate  {
         } else {
             // pre iOS 10.0
             if #available(iOS 8.0, *) {
-                UIApplication.shared.openURL(NSURL(string: UIApplicationOpenSettingsURLString)! as URL)
+                UIApplication.shared.openURL(NSURL(string: UIApplication.openSettingsURLString)! as URL)
                 self.getStatus(command)
             } else {
                 self.sendErrorCode(command: command, error: MediaCaptureError.open_settings_unavailable)
