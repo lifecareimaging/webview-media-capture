@@ -302,24 +302,7 @@ public class MediaCapture extends CordovaPlugin {
             callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
         }
         currentCameraId = cameraId;
-        if(scanning) {
-            scanning = false;
-            prepared = false;
-            if(cameraPreviewing) {
-                this.cordova.getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((ViewGroup) mBarcodeView.getParent()).removeView(mBarcodeView);
-                        cameraPreviewing = false;
-                    }
-                });
-            }
-            closeCamera();
-            prepare(callbackContext);
-            scan(this.nextScanCallback);
-        }
-        else
-            prepare(callbackContext);
+        prepare(callbackContext);
     }
 
     public void onRequestPermissionResult(int requestCode, String[] permissions,
@@ -350,14 +333,12 @@ public class MediaCapture extends CordovaPlugin {
                     denied = false;
                     switch (requestCode) {
                         case 33:
-                            if(switchFlashOn && !scanning && !switchFlashOff)
+                            if(switchFlashOn && !switchFlashOff)
                                 switchFlash(true, callbackContext);
-                            else if(switchFlashOff && !scanning)
+                            else if(switchFlashOff)
                                 switchFlash(false, callbackContext);
                             else {
                                 setupCamera(callbackContext);
-                                if(!scanning)
-                                    getStatus(callbackContext);
                             }
                             break;
                     }
@@ -448,9 +429,6 @@ public class MediaCapture extends CordovaPlugin {
         });
         prepared = true;
         previewing = true;
-        if(shouldScanAgain)
-            scan(callbackContext);
-
     }
 
     @Override
@@ -467,8 +445,6 @@ public class MediaCapture extends CordovaPlugin {
                     }
                     else {
                         setupCamera(callbackContext);
-                        if (!scanning)
-                            getStatus(callbackContext);
                     }
                 }
                 else {
@@ -482,8 +458,6 @@ public class MediaCapture extends CordovaPlugin {
                     }
                     else {
                         setupCamera(callbackContext);
-                        if (!scanning)
-                            getStatus(callbackContext);
                     }
                 }
                 else {
@@ -646,7 +620,6 @@ public class MediaCapture extends CordovaPlugin {
         status.put("denied",boolToNumberString(denied));
         status.put("restricted",boolToNumberString(restricted));
         status.put("prepared",boolToNumberString(prepared));
-        status.put("scanning",boolToNumberString(scanning));
         status.put("previewing",boolToNumberString(previewing));
         status.put("showing",boolToNumberString(showing));
         status.put("lightEnabled",boolToNumberString(lightOn));
@@ -664,18 +637,6 @@ public class MediaCapture extends CordovaPlugin {
         prepared = false;
         makeOpaque();
         previewing = false;
-        if(scanning) {
-            this.cordova.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    scanning = false;
-                    if (mBarcodeView != null) {
-                        mBarcodeView.stopDecoding();
-                    }
-                }
-            });
-            this.nextScanCallback = null;
-        }
 
         if(cameraPreviewing) {
             this.cordova.getActivity().runOnUiThread(new Runnable() {
