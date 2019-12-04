@@ -432,17 +432,17 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     @objc func stopRecording(_ command: CDVInvokedUrlCommand) {
         videoFileOutput?.stopRecording()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { // Change `2.0` to the desired number of seconds.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // Change `2.0` to the desired number of seconds.
             let fileManager = FileManager.default
             let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
             do {
                 var videos = [AVAsset]()
                 var fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-                fileURLs.sort(by: { (url1: URL, url2: URL) -> Bool in return url1.absoluteString < url2.absoluteString })
+                fileURLs.sort(by: { (url1: URL, url2: URL) -> Bool in return url1.lastPathComponent < url2.lastPathComponent })
 
                 for fileUrl in fileURLs {
                     let video = AVAsset(url: fileUrl)
-                    if (fileUrl.lastPathComponent.contains("lccamera") && video.isExportable) {
+                    if (fileUrl.lastPathComponent.contains("lccamera")) {
                         videos.append(video)
                     }
                 }
