@@ -441,6 +441,7 @@ public class MediaCapture extends CordovaPlugin {
                     }
                     else {
                         setupCamera(callbackContext);
+                        getStatus(callbackContext);
                     }
                 }
                 else {
@@ -454,6 +455,7 @@ public class MediaCapture extends CordovaPlugin {
                     }
                     else {
                         setupCamera(callbackContext);
+                        getStatus(callbackContext);
                     }
                 }
                 else {
@@ -625,8 +627,8 @@ public class MediaCapture extends CordovaPlugin {
         status.put("currentCamera",Integer.toString(getCurrentCameraId()));
 
         JSONObject obj = new JSONObject(status);
-        PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
-        callbackContext.sendPluginResult(result);
+        //PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
+        callbackContext.success(obj);
     }
 
     private void destroy(CallbackContext callbackContext) {
