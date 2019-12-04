@@ -56,6 +56,10 @@ public class MediaCapture extends CordovaPlugin {
     private boolean oneTime = true;
     private boolean keepDenied = false;
     private boolean appPausedWithActivePreview = false;
+    private boolean recording = false;
+    private boolean muted= false;
+    private boolean paused= false;
+
     
     static class MediaCaptureError {
         private static final int UNEXPECTED_ERROR = 0,
@@ -625,6 +629,10 @@ public class MediaCapture extends CordovaPlugin {
         status.put("canEnableLight",boolToNumberString(canEnableLight));
         status.put("canChangeCamera",boolToNumberString(canChangeCamera()));
         status.put("currentCamera",Integer.toString(getCurrentCameraId()));
+        status.put("recording",Integer.toString(recording));
+        status.put("muted",Integer.toString(muted));
+        status.put("paused",Integer.toString(paused));
+
 
         JSONObject obj = new JSONObject(status);
         //PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
