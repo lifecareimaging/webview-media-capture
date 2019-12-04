@@ -11,25 +11,6 @@ module.exports = function createMediaCapture(cordova) {
     }
   }
 
-<<<<<<< HEAD
-function convertStatus(statusDictionary) {
-  return {
-    authorized: stringToBool(statusDictionary.authorized),
-    denied: stringToBool(statusDictionary.denied),
-    restricted: stringToBool(statusDictionary.restricted),
-    prepared: stringToBool(statusDictionary.prepared),
-    previewing: stringToBool(statusDictionary.previewing),
-    showing: stringToBool(statusDictionary.showing),
-    muted: boolToNumberString(statusDictionary.muted),
-    recording: boolToNumberString(statusDictionary.recording),
-    lightEnabled: stringToBool(statusDictionary.lightEnabled),
-    canOpenSettings: stringToBool(statusDictionary.canOpenSettings),
-    canEnableLight: stringToBool(statusDictionary.canEnableLight),
-    canChangeCamera: stringToBool(statusDictionary.canChangeCamera),
-    currentCamera: parseInt(statusDictionary.currentCamera)
-  };
-}
-=======
   function convertStatus(statusDictionary) {
     return {
       authorized: stringToBool(statusDictionary.authorized),
@@ -48,7 +29,6 @@ function convertStatus(statusDictionary) {
       currentCamera: parseInt(statusDictionary.currentCamera)
     };
   }
->>>>>>> 7a59f291f7fa856d204db23b18dd44c77a18c64c
 
   function clearBackground() {
     var body = document.body;
@@ -150,77 +130,7 @@ function convertStatus(statusDictionary) {
     };
   }
 
-<<<<<<< HEAD
-return {
-  prepare: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'prepare', []);
-  },
-  destroy: function(callback) {
-    cordova.exec(doneCallback(callback, true), null, 'MediaCapture', 'destroy', []);
-  },
-  show: function(callback) {
-    cordova.exec(doneCallback(callback, true), null, 'MediaCapture', 'show', []);
-  },
-  hide: function(callback) {
-    cordova.exec(doneCallback(callback, true), null, 'MediaCapture', 'hide', []);
-  },
-  pausePreview: function(callback) {
-    cordova.exec(doneCallback(callback), null, 'MediaCapture', 'pausePreview', []);
-  },
-  resumePreview: function(callback) {
-    cordova.exec(doneCallback(callback), null, 'MediaCapture', 'resumePreview', []);
-  },
-  enableLight: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'enableLight', []);
-  },
-  disableLight: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'disableLight', []);
-  },
-  muteSound: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'muteSound', []);
-  },  
-  unmuteSound: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'unmuteSound', []);
-  },  
-  record: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'record', []);
-  },  
-  stopRecording: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'stopRecording', []);
-  },  
-  pauseRecording: function(callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'pauseRecording', []);
-  },
-  useCamera: function(index, callback) {
-    cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'useCamera', [index]);
-  },
-  useFrontCamera: function(callback) {
-    var frontCamera = 1;
-    if (callback) {
-      this.useCamera(frontCamera, callback);
-    } else {
-      cordova.exec(null, null, 'MediaCapture', 'useCamera', [frontCamera]);
-    }
-  },
-  useBackCamera: function(callback) {
-    var backCamera = 0;
-    if (callback) {
-      this.useCamera(backCamera, callback);
-    } else {
-      cordova.exec(null, null, 'MediaCapture', 'useCamera', [backCamera]);
-    }
-  },
-  openSettings: function(callback) {
-    if (callback) {
-      cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'openSettings', []);
-    } else {
-      cordova.exec(null, null, 'MediaCapture', 'openSettings', []);
-    }
-  },
-  getStatus: function(callback) {
-=======
   function doneCallback(callback, clear) {
->>>>>>> 7a59f291f7fa856d204db23b18dd44c77a18c64c
     if (!callback) {
       return null;
     }
