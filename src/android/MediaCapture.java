@@ -56,6 +56,10 @@ public class MediaCapture extends CordovaPlugin {
     private boolean oneTime = true;
     private boolean keepDenied = false;
     private boolean appPausedWithActivePreview = false;
+    private boolean recording = false;
+    private boolean muted= false;
+    private boolean paused= false;
+
     
     static class MediaCaptureError {
         private static final int UNEXPECTED_ERROR = 0,
@@ -152,7 +156,7 @@ public class MediaCapture extends CordovaPlugin {
                             } else
                                 disableLight(callbackContext);
                         } else {
-                            callbackContext.error(QRScannerError.LIGHT_UNAVAILABLE);
+                            callbackContext.error(MediaCaptureError.LIGHT_UNAVAILABLE);
                         }
                     }
                 });
@@ -195,7 +199,7 @@ public class MediaCapture extends CordovaPlugin {
                 return false;
             }
         } catch (Exception e) {
-            callbackContext.error(QRScannerError.UNEXPECTED_ERROR);
+            callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
             return false;
         }
     }
@@ -235,11 +239,11 @@ public class MediaCapture extends CordovaPlugin {
             if (hasFlash()) {
                 doswitchFlash(toggleLight, callbackContext);
             } else {
-                callbackContext.error(QRScannerError.LIGHT_UNAVAILABLE);
+                callbackContext.error(MediaCaptureError.LIGHT_UNAVAILABLE);
             }
         } catch (Exception e) {
             lightOn = false;
-            callbackContext.error(QRScannerError.LIGHT_UNAVAILABLE);
+            callbackContext.error(MediaCaptureError.LIGHT_UNAVAILABLE);
         }
     }
 
@@ -252,7 +256,7 @@ public class MediaCapture extends CordovaPlugin {
 
     private void doswitchFlash(final boolean toggleLight, final CallbackContext callbackContext) throws IOException, CameraAccessException {        //No flash for front facing cameras
         if (getCurrentCameraId() == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            callbackContext.error(QRScannerError.LIGHT_UNAVAILABLE);
+            callbackContext.error(MediaCaptureError.LIGHT_UNAVAILABLE);
             return;
         }
         if (!prepared) {
@@ -299,27 +303,10 @@ public class MediaCapture extends CordovaPlugin {
         try {
             cameraId = args.getInt(0);
         } catch (JSONException d) {
-            callbackContext.error(QRScannerError.UNEXPECTED_ERROR);
+            callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
         }
         currentCameraId = cameraId;
-        if(scanning) {
-            scanning = false;
-            prepared = false;
-            if(cameraPreviewing) {
-                this.cordova.getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((ViewGroup) mBarcodeView.getParent()).removeView(mBarcodeView);
-                        cameraPreviewing = false;
-                    }
-                });
-            }
-            closeCamera();
-            prepare(callbackContext);
-            scan(this.nextScanCallback);
-        }
-        else
-            prepare(callbackContext);
+        prepare(callbackContext);
     }
 
     public void onRequestPermissionResult(int requestCode, String[] permissions,
@@ -337,12 +324,12 @@ public class MediaCapture extends CordovaPlugin {
                         // user denied flagging NEVER ASK AGAIN
                         denied = true;
                         authorized = false;
-                        callbackContext.error(QRScannerError.CAMERA_ACCESS_DENIED);
+                        callbackContext.error(MediaCaptureError.CAMERA_ACCESS_DENIED);
                         return;
                     } else {
                         authorized = false;
                         denied = false;
-                        callbackContext.error(QRScannerError.CAMERA_ACCESS_DENIED);
+                        callbackContext.error(MediaCaptureError.CAMERA_ACCESS_DENIED);
                         return;
                     }
                 } else if (grantResults[i] == PackageManager.PERMISSION_GRANTED){
@@ -350,14 +337,12 @@ public class MediaCapture extends CordovaPlugin {
                     denied = false;
                     switch (requestCode) {
                         case 33:
-                            if(switchFlashOn && !scanning && !switchFlashOff)
+                            if(switchFlashOn && !switchFlashOff)
                                 switchFlash(true, callbackContext);
-                            else if(switchFlashOff && !scanning)
+                            else if(switchFlashOff)
                                 switchFlash(false, callbackContext);
                             else {
                                 setupCamera(callbackContext);
-                                if(!scanning)
-                                    getStatus(callbackContext);
                             }
                             break;
                     }
@@ -448,13 +433,6 @@ public class MediaCapture extends CordovaPlugin {
         });
         prepared = true;
         previewing = true;
-        if(shouldScanAgain)
-            scan(callbackContext);
-
-    }
-
-    @Override
-    public void possibleResultPoints(List<ResultPoint> list) {
     }
 
     // ---- BEGIN EXTERNAL API ----
@@ -467,12 +445,11 @@ public class MediaCapture extends CordovaPlugin {
                     }
                     else {
                         setupCamera(callbackContext);
-                        if (!scanning)
-                            getStatus(callbackContext);
+                        getStatus(callbackContext);
                     }
                 }
                 else {
-                    callbackContext.error(QRScannerError.BACK_CAMERA_UNAVAILABLE);
+                    callbackContext.error(MediaCaptureError.BACK_CAMERA_UNAVAILABLE);
                 }
             }
             else if(currentCameraId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
@@ -482,16 +459,15 @@ public class MediaCapture extends CordovaPlugin {
                     }
                     else {
                         setupCamera(callbackContext);
-                        if (!scanning)
-                            getStatus(callbackContext);
+                        getStatus(callbackContext);
                     }
                 }
                 else {
-                    callbackContext.error(QRScannerError.FRONT_CAMERA_UNAVAILABLE);
+                    callbackContext.error(MediaCaptureError.FRONT_CAMERA_UNAVAILABLE);
                 }
             }
             else {
-                callbackContext.error(QRScannerError.CAMERA_UNAVAILABLE);
+                callbackContext.error(MediaCaptureError.CAMERA_UNAVAILABLE);
             }
         }
         else {
@@ -574,7 +550,7 @@ public class MediaCapture extends CordovaPlugin {
         lightOn = true;
         if(hasPermission())
             switchFlash(true, callbackContext);
-        else callbackContext.error(QRScannerError.CAMERA_ACCESS_DENIED);
+        else callbackContext.error(MediaCaptureError.CAMERA_ACCESS_DENIED);
     }
 
     private void disableLight(CallbackContext callbackContext) {
@@ -582,7 +558,7 @@ public class MediaCapture extends CordovaPlugin {
         switchFlashOn = false;
         if(hasPermission())
             switchFlash(false, callbackContext);
-        else callbackContext.error(QRScannerError.CAMERA_ACCESS_DENIED);
+        else callbackContext.error(MediaCaptureError.CAMERA_ACCESS_DENIED);
     }
 
     private void openSettings(CallbackContext callbackContext) {
@@ -612,7 +588,7 @@ public class MediaCapture extends CordovaPlugin {
             if (shouldShow)
                 show(callbackContext);
         } catch (Exception e) {
-            callbackContext.error(QRScannerError.OPEN_SETTINGS_UNAVAILABLE);
+            callbackContext.error(MediaCaptureError.OPEN_SETTINGS_UNAVAILABLE);
         }
 
     }
@@ -646,7 +622,6 @@ public class MediaCapture extends CordovaPlugin {
         status.put("denied",boolToNumberString(denied));
         status.put("restricted",boolToNumberString(restricted));
         status.put("prepared",boolToNumberString(prepared));
-        status.put("scanning",boolToNumberString(scanning));
         status.put("previewing",boolToNumberString(previewing));
         status.put("showing",boolToNumberString(showing));
         status.put("lightEnabled",boolToNumberString(lightOn));
@@ -654,28 +629,20 @@ public class MediaCapture extends CordovaPlugin {
         status.put("canEnableLight",boolToNumberString(canEnableLight));
         status.put("canChangeCamera",boolToNumberString(canChangeCamera()));
         status.put("currentCamera",Integer.toString(getCurrentCameraId()));
+        status.put("recording",boolToNumberString(recording));
+        status.put("muted",boolToNumberString(muted));
+        status.put("paused",boolToNumberString(paused));
+
 
         JSONObject obj = new JSONObject(status);
-        PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
-        callbackContext.sendPluginResult(result);
+        //PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
+        callbackContext.success(obj);
     }
 
     private void destroy(CallbackContext callbackContext) {
         prepared = false;
         makeOpaque();
         previewing = false;
-        if(scanning) {
-            this.cordova.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    scanning = false;
-                    if (mBarcodeView != null) {
-                        mBarcodeView.stopDecoding();
-                    }
-                }
-            });
-            this.nextScanCallback = null;
-        }
 
         if(cameraPreviewing) {
             this.cordova.getActivity().runOnUiThread(new Runnable() {

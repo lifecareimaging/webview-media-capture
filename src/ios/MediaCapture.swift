@@ -464,6 +464,13 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                 print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
             }
         }
+        /*
+        merge(arrayVideos: arrayVideos, completion: { exporter in
+            let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: exporter.outputURL?.absoluteString)
+            self.commandDelegate!.send(pluginResult, callbackId: command.callbackId)
+            
+            self.arrayVideos = [AVAsset]()
+        }) */
     }
 
     @objc func pauseRecording(_ command: CDVInvokedUrlCommand) {
