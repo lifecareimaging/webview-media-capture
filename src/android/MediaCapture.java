@@ -629,9 +629,9 @@ public class MediaCapture extends CordovaPlugin {
         status.put("canEnableLight",boolToNumberString(canEnableLight));
         status.put("canChangeCamera",boolToNumberString(canChangeCamera()));
         status.put("currentCamera",Integer.toString(getCurrentCameraId()));
-        status.put("recording",Integer.toString(recording));
-        status.put("muted",Integer.toString(muted));
-        status.put("paused",Integer.toString(paused));
+        status.put("recording",boolToNumberString(recording));
+        status.put("muted",boolToNumberString(muted));
+        status.put("paused",boolToNumberString(paused));
 
 
         JSONObject obj = new JSONObject(status);
