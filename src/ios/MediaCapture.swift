@@ -6,13 +6,13 @@ import Photos
 class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     
     var videoIndex = 1
+    var mergeIndex = 1
     var finalOutputFileUrl: URL?
     
     func merge(arrayVideos:[AVAsset], completion:@escaping (_ exporter: AVAssetExportSession) -> ()) -> Void {
         let mainComposition = AVMutableComposition()
         let compositionVideoTrack = mainComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
         compositionVideoTrack?.preferredTransform = CGAffineTransform(rotationAngle: .pi / 2)
-        let soundtrackTrack = mainComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
         var time:CMTime = CMTimeMakeWithSeconds(0, preferredTimescale: 1000000)
 
         for (index, videoAsset) in arrayVideos.enumerated() {
@@ -25,13 +25,13 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
             }
             
             if(audioTracks.count > 0) {
+                let soundtrackTrack = mainComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
                 try! soundtrackTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: audioTracks[0], at: atTime)
             }
 
             time = CMTimeAdd(time, videoAsset.duration)
         }
-        
-        let outputFileURL = URL(fileURLWithPath: NSTemporaryDirectory() + "merge.mp4")
+        let outputFileURL = URL(fileURLWithPath: NSTemporaryDirectory() + "merge\(mergeIndex).mp4")
         let fileManager = FileManager()
 
         do {
@@ -388,26 +388,25 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     @objc func muteSound(_ command: CDVInvokedUrlCommand) {
-        muted = true
-        captureSession!.beginConfiguration()
-
-        let audioConnection :AVCaptureConnection? = videoFileOutput?.connection(with:AVMediaType.audio)
-        
-        if let connection = audioConnection {
-            connection.isEnabled = false;
+        if(self.prepCamera(command: command)) {
+            muted = true
+            let audioConnection :AVCaptureConnection? = videoFileOutput?.connection(with:AVMediaType.audio)
+            
+            if let connection = audioConnection {
+                connection.isEnabled = false;
+            }
         }
-        captureSession!.commitConfiguration()
     }
 
     @objc func unmuteSound(_ command: CDVInvokedUrlCommand) {
-        muted = false
-        captureSession!.beginConfiguration()
-        let audioConnection :AVCaptureConnection? = videoFileOutput?.connection(with:AVMediaType.audio)
-        
-        if let connection = audioConnection {
-            connection.isEnabled = true;
+        if(self.prepCamera(command: command)) {
+            muted = false
+            let audioConnection :AVCaptureConnection? = videoFileOutput?.connection(with:AVMediaType.audio)
+            
+            if let connection = audioConnection {
+                connection.isEnabled = true;
+            }
         }
-        captureSession!.commitConfiguration()
     }
 
     @objc func record(_ command: CDVInvokedUrlCommand) {
@@ -446,11 +445,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                         videos.append(video)
                     }
                 }
-                
-                print("---")
-                print(videos.count)
-                print("---")
-                
+
                 self.merge(arrayVideos: videos, completion: { exporter in
                     for video in videos {
                         let urlAsset = video as! AVURLAsset
@@ -459,6 +454,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                     
                     let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: exporter.outputURL?.absoluteString)
                     self.commandDelegate!.send(pluginResult, callbackId: command.callbackId)
+                    self.mergeIndex += 1
                 })
             } catch {
                 print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
@@ -567,6 +563,20 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                 self.backCamera = nil
                 self.videoFileOutput = nil
                 self.microphone = nil
+                let fileManager = FileManager()
+                let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                do {
+                    let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+                    
+                    for fileUrl in fileURLs {
+                        if (fileUrl.lastPathComponent.contains("merged")) {
+                            self.deleteFile(fileUrl: fileUrl)
+                        }
+                    }
+                } catch {
+                    print("Error deleting merged files")
+                }
+
             }, completion: {
                 self.getStatus(command)
             })
