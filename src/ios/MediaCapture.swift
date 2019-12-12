@@ -31,8 +31,13 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
 
             time = CMTimeAdd(time, videoAsset.duration)
         }
-        let outputFileURL = URL(fileURLWithPath: NSTemporaryDirectory() + "merge\(mergeIndex).mp4")
+        
         let fileManager = FileManager()
+
+        let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
+        let outputPath = "\(documentsPath)/merge\(mergeIndex).mp4"
+
+        let outputFileURL = URL(fileURLWithPath: outputPath)
 
         do {
             try fileManager.removeItem(at: outputFileURL)
@@ -61,7 +66,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
     
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
-        
+        	
     }
     
     class CameraView: UIView {
@@ -460,13 +465,6 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                 print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
             }
         }
-        /*
-        merge(arrayVideos: arrayVideos, completion: { exporter in
-            let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: exporter.outputURL?.absoluteString)
-            self.commandDelegate!.send(pluginResult, callbackId: command.callbackId)
-            
-            self.arrayVideos = [AVAsset]()
-        }) */
     }
 
     @objc func pauseRecording(_ command: CDVInvokedUrlCommand) {
@@ -563,20 +561,6 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                 self.backCamera = nil
                 self.videoFileOutput = nil
                 self.microphone = nil
-                let fileManager = FileManager()
-                let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                do {
-                    let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-                    
-                    for fileUrl in fileURLs {
-                        if (fileUrl.lastPathComponent.contains("merged")) {
-                            self.deleteFile(fileUrl: fileUrl)
-                        }
-                    }
-                } catch {
-                    print("Error deleting merged files")
-                }
-
             }, completion: {
                 self.getStatus(command)
             })
