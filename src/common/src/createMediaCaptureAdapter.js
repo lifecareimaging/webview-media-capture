@@ -22,10 +22,6 @@ module.exports = function createMediaCapture(cordova) {
       muted: stringToBool(statusDictionary.muted),
       recording: stringToBool(statusDictionary.recording),
       paused: stringToBool(statusDictionary.paused),
-      lightEnabled: stringToBool(statusDictionary.lightEnabled),
-      canOpenSettings: stringToBool(statusDictionary.canOpenSettings),
-      canEnableLight: stringToBool(statusDictionary.canEnableLight),
-      canChangeCamera: stringToBool(statusDictionary.canChangeCamera),
       currentCamera: parseInt(statusDictionary.currentCamera)
     };
   }
@@ -216,6 +212,9 @@ module.exports = function createMediaCapture(cordova) {
         throw new Error('No callback provided to getStatus method.');
       }
       cordova.exec(doneCallback(callback), null, 'MediaCapture', 'getStatus', []);
-    }
+    },
+    nativeCamera: function (callback) {
+      cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'nativeCamera', []);
+    },
   };
 };
