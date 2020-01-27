@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import android.content.Context;
 import android.content.Intent;
+import android.app.Activity;
 
 
 @SuppressWarnings("deprecation")
@@ -41,7 +42,7 @@ public class MediaCapture extends CordovaPlugin {
     private boolean showing = false;
     private boolean prepared = false;
     private int currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
-    private String[] permissions = {Manifest.permission.CAMERA};
+    private String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
     //Preview started or paused
     private boolean previewing = false;
     //private BarcodeView  mBarcodeView;
@@ -56,6 +57,7 @@ public class MediaCapture extends CordovaPlugin {
     private boolean recording = false;
     private boolean muted= false;
     private boolean paused= false;
+    private Exception lastException =null;
 
     
     static class MediaCaptureError {
@@ -68,6 +70,7 @@ public class MediaCapture extends CordovaPlugin {
                 LIGHT_UNAVAILABLE = 6,
                 OPEN_SETTINGS_UNAVAILABLE = 7;
     }
+    private static final int VIDEO_URL = 1001;
 
     @Override
     public boolean execute(final String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -142,7 +145,24 @@ public class MediaCapture extends CordovaPlugin {
                 });
                 return true;
             } else if(action.equals("nativeCamera")) {
-                this.openNewActivity(context);
+
+                /*cordova.getThreadPool().execute(new Runnable() {
+                    public void run() {
+                cordova.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {*/
+                        try {
+                            openNewActivity(context);
+                        } catch(Exception e) 
+                        {
+                            lastException= e;
+                            callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
+                        }
+                //    }});
+                //}});
+                return true;
+            } else if (action.equals("getLastError")) {
+                callbackContext.success(lastException.getMessage());
                 return true;
             }
             else {
@@ -155,9 +175,32 @@ public class MediaCapture extends CordovaPlugin {
     }
 
     private void openNewActivity(Context context) {
-        Intent intent = new Intent(context, MainActivity.class);
-        this.cordova.getActivity().startActivity(intent);
+
+        if (!hasPermission()) {
+            requestPermission(33);
+            return;
+        } else {
+            Intent intent = new Intent(context, MainActivity.class);
+            intent.putExtra("RECORD_LABEL", "Nauhoita");
+            cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
+        }
+
+        
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (requestCode == VIDEO_URL) {
+            if(resultCode == Activity.RESULT_OK){
+                String result=data.getStringExtra("video_url");
+                callbackContext.success(result);
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                //Write your code if there's no result
+            }
+        }
+    }//onActivityResult
 
     @Override
     public void onPause(boolean multitasking) {
@@ -194,7 +237,7 @@ public class MediaCapture extends CordovaPlugin {
    
     public void onRequestPermissionResult(int requestCode, String[] permissions,
                                           int[] grantResults) throws JSONException {
-        /*oneTime = false;
+        oneTime = false;
         if (requestCode == 33) {
             // for each permission check if the user granted/denied them
             // you may want to group the rationale in a single dialog,
@@ -220,9 +263,10 @@ public class MediaCapture extends CordovaPlugin {
                     denied = false;
                     switch (requestCode) {
                         case 33:
-                           
-                            setupCamera(callbackContext);
-                            break;
+                            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), MainActivity.class);
+                            intent.putExtra("RECORD_LABEL", "Nauhoita");
+                            cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
+                        break;
                     }
                 }
                 else {
@@ -231,7 +275,7 @@ public class MediaCapture extends CordovaPlugin {
                     restricted = false;
                 }
             }
-        }*/
+        }
     }
 
     public boolean hasPermission() {
@@ -246,7 +290,7 @@ public class MediaCapture extends CordovaPlugin {
     }
 
     private void requestPermission(int requestCode) {
-        //PermissionHelper.requestPermissions(this, requestCode, permissions);
+        PermissionHelper.requestPermissions(this, requestCode, permissions);
     }
 
     private void closeCamera() {

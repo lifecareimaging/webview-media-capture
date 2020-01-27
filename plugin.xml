@@ -21,6 +21,11 @@
       <uses-feature android:name="android.hardware.camera" android:required="false" />
       <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     </config-file>
+
+    <config-file target="AndroidManifest.xml" parent="/manifest/application">
+      <activity android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:name="com.lifecare.cordova.mediacapture.MainActivity"></activity>
+
+    </config-file>
     <source-file src="src/android/MediaCapture.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
     <source-file src="src/android/MainActivity.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
     <source-file src="src/android/AutoFitTextureView.java" target-dir="src/com/lifecare/cordova/mediacapture"/>

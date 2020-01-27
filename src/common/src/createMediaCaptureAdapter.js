@@ -214,7 +214,10 @@ module.exports = function createMediaCapture(cordova) {
       cordova.exec(doneCallback(callback), null, 'MediaCapture', 'getStatus', []);
     },
     nativeCamera: function (callback) {
-      cordova.exec(successCallback(callback), errorCallback(callback), 'MediaCapture', 'nativeCamera', []);
+      cordova.exec(callback, errorCallback(callback), 'MediaCapture', 'nativeCamera', []);
+    },
+    getLastError: function (callback) {
+      cordova.exec(callback, null, 'MediaCapture', 'getLastError', []);
     },
   };
 };

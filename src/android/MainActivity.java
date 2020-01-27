@@ -54,6 +54,12 @@ import android.widget.RelativeLayout;
 import static android.media.MediaRecorder.OutputFormat.MPEG_4;
 import static android.media.MediaRecorder.VideoEncoder.H264;
 
+import android.content.Intent;
+import java.util.Timer;
+import java.util.TimerTask;
+
+
+
 public class MainActivity extends FragmentActivity {
 
     private Size previewsize;
@@ -71,6 +77,7 @@ public class MainActivity extends FragmentActivity {
     private static final String VIDEO_PATH_NAME = "/Videos/sample.mp4";
     private static final String VIDEO_DIRECTORY_NAME = "SampleVideos";
 
+
     private boolean isRecordingVideo = false;
 
     private HandlerThread backgroundThread;
@@ -78,6 +85,10 @@ public class MainActivity extends FragmentActivity {
 
     private Integer sensorOrientation;
     private Size videoSize;
+    private String lastRecordedFileUrl;
+    private Timer myTimer;
+    private Button recordVideoButton;
+    private int secondsElapsed=0;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -111,9 +122,12 @@ public class MainActivity extends FragmentActivity {
         textureView.setLayoutParams(relLayoutParam);
         relLayout.addView(textureView);
 
-        Button recordVideoButton = new Button(this);
+        recordVideoButton = new Button(this);
 
-        recordVideoButton.setText("Record video");
+        Intent intent = getIntent();
+        String record_label = intent.getStringExtra("RECORD_LABEL");
+
+        recordVideoButton.setText(record_label);
         RelativeLayout.LayoutParams recordButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         recordButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         recordVideoButton.setLayoutParams(recordButtonLayoutParams);
@@ -122,14 +136,11 @@ public class MainActivity extends FragmentActivity {
         stopRecordingButton.setText("Stop recording");
         stopRecordingButton.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT));
 
-        //relLayout.addView(textureView);
         relLayout.addView(recordVideoButton);
         relLayout.addView(stopRecordingButton);
         setContentView(relLayout);
-        //textureView = (AutoFitTextureView) findViewById(R.id.textureview);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
 
-        //getpicture = (Button) findViewById(R.id.recordVideo);
         recordVideoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -138,7 +149,6 @@ public class MainActivity extends FragmentActivity {
         });
 
 
-        //stopvideo = (Button) findViewById(R.id.stopVideo);
         stopRecordingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -151,15 +161,9 @@ public class MainActivity extends FragmentActivity {
 
         if(recorder==null)
             recorder=new MediaRecorder();
-        //recorder.setCamera(cameraDevice);
-        //recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
         recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         recorder.setOutputFormat(MPEG_4);
-        ///recorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_1080P));
-        /*recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-        recorder.setVideoEncoder(H264);
-        recorder.setVideoSize(1920, 1080);*/
 
         try{
             File file = new File(Environment.getExternalStorageDirectory(),VIDEO_PATH_NAME);
@@ -173,7 +177,7 @@ public class MainActivity extends FragmentActivity {
 
                 file.createNewFile();
             }
-
+            lastRecordedFileUrl= file.getAbsolutePath();
             recorder.setOutputFile(file.getAbsolutePath());
 
             CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
@@ -264,6 +268,15 @@ public class MainActivity extends FragmentActivity {
                         isRecordingVideo = true;
                         // Start recording
                         recorder.start();
+
+                        myTimer = new Timer();
+                        myTimer.schedule(new TimerTask() {          
+                            @Override
+                            public void run() {
+                                TimerMethod();
+                            }
+                    
+                        }, 0, 1000);
                     });
 
                 }
@@ -286,6 +299,21 @@ public class MainActivity extends FragmentActivity {
     }
 
 
+    private void TimerMethod()
+    {
+        secondsElapsed++;
+        MainActivity.this.runOnUiThread(Timer_Tick);
+    }
+
+
+    private Runnable Timer_Tick = new Runnable() {
+        public void run() {
+            recordVideoButton.setText(secondsElapsed +"/max");
+        }
+    };
+
+
+
 
 
     public void stopRecordingVideo() {
@@ -300,6 +328,11 @@ public class MainActivity extends FragmentActivity {
         // Stop recording
         recorder.stop();
         recorder.reset();
+
+        Intent intent = new Intent();
+        intent.putExtra("video_url", lastRecordedFileUrl);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     private void updatePreview() {
@@ -324,7 +357,7 @@ public class MainActivity extends FragmentActivity {
         try {
 
 
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+            /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
                     ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
                     ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -339,7 +372,7 @@ public class MainActivity extends FragmentActivity {
                         android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
                         android.Manifest.permission.RECORD_AUDIO},CAMERA_PERMISSIONS);
                 return;
-            }
+            }*/
             try {
                 CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                 String[] cameraIds = manager.getCameraIdList();
@@ -455,7 +488,7 @@ public class MainActivity extends FragmentActivity {
 
 
 
-    @SuppressLint("MissingPermission")
+    /*@SuppressLint("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String[] permissions, int[] grantResults) {
@@ -489,7 +522,7 @@ public class MainActivity extends FragmentActivity {
             // other 'case' lines to check for other
             // permissions this app might request.
         }
-    }
+    }*/
 
     private TextureView.SurfaceTextureListener surfaceTextureListener=new TextureView.SurfaceTextureListener() {
         @Override
