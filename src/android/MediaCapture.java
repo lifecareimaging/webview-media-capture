@@ -62,6 +62,7 @@ public class MediaCapture extends CordovaPlugin {
     private boolean muted= false;
     private boolean paused= false;
     private Exception lastException =null;
+    private int lengthInSeconds = 60;
 
     
     static class MediaCaptureError {
@@ -90,6 +91,7 @@ public class MediaCapture extends CordovaPlugin {
                     @Override
                     public void run() {*/
                         try {
+                            lengthInSeconds = args.getInt(0);
                             openNewActivity(context);
                         } catch(Exception e) 
                         {
@@ -119,7 +121,7 @@ public class MediaCapture extends CordovaPlugin {
             return;
         } else {
             Intent intent = new Intent(context, MainActivity.class);
-            intent.putExtra("RECORD_LABEL", "Nauhoita");
+            intent.putExtra("VIDEO_MAX_LENGTH", lengthInSeconds);
             cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
         }
     }

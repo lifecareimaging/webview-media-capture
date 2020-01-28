@@ -76,6 +76,7 @@ public class MainActivity extends FragmentActivity {
     private Surface mainsurface;
     private static final String VIDEO_PATH_NAME = "/Videos/sample.mp4";
     private static final String VIDEO_DIRECTORY_NAME = "SampleVideos";
+    private static final String VIDEO_MAX_LENGTH  = "VIDEO_MAX_LENGTH";
 
 
     private boolean isRecordingVideo = false;
@@ -89,6 +90,7 @@ public class MainActivity extends FragmentActivity {
     private Timer myTimer;
     private Button recordVideoButton;
     private int secondsElapsed=0;
+    private int videoMaxLengthInSeconds;
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -125,9 +127,9 @@ public class MainActivity extends FragmentActivity {
         recordVideoButton = new Button(this);
 
         Intent intent = getIntent();
-        String record_label = intent.getStringExtra("RECORD_LABEL");
+        videoMaxLengthInSeconds = intent.getIntExtra("VIDEO_MAX_LENGTH", 60);
 
-        recordVideoButton.setText(record_label);
+        recordVideoButton.setText("Record");
         RelativeLayout.LayoutParams recordButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         recordButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         recordVideoButton.setLayoutParams(recordButtonLayoutParams);
@@ -308,9 +310,14 @@ public class MainActivity extends FragmentActivity {
 
     private Runnable Timer_Tick = new Runnable() {
         public void run() {
-            recordVideoButton.setText(secondsElapsed +"/max");
+            recordVideoButton.setText(secondsToString(secondsElapsed)  +"/" +secondsToString(videoMaxLengthInSeconds));
         }
     };
+
+
+    private String secondsToString(int seconds) {
+        return String.format("%02d:%02d", seconds / 60, seconds % 60);
+    }
 
 
 
