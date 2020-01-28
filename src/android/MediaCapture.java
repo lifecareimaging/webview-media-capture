@@ -35,6 +35,10 @@ import android.app.Activity;
 @SuppressWarnings("deprecation")
 public class MediaCapture extends CordovaPlugin {
 
+    /**
+     *
+     */
+    private static final int CAMERA_PERMISSIONS = 33;
     private CallbackContext callbackContext;
     private boolean cameraClosing;
     private static Boolean flashAvailable;
@@ -77,74 +81,8 @@ public class MediaCapture extends CordovaPlugin {
         this.callbackContext = callbackContext;
         Context context = cordova.getActivity().getApplicationContext();
         try {
-            if (action.equals("show")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        show(callbackContext);
-                    }
-                });
-                return true;
-            }
             
-            else if(action.equals("pausePreview")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        pausePreview(callbackContext);
-                    }
-                });
-                return true;
-            }
-            
-            else if(action.equals("resumePreview")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        resumePreview(callbackContext);
-                    }
-                });
-                return true;
-            }
-            else if(action.equals("hide")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        hide(callbackContext);
-                    }
-                });
-                return true;
-            }
-            
-            else if (action.equals("prepare")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        cordova.getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    currentCameraId = args.getInt(0);
-                                } catch (JSONException e) {
-                                }
-                                prepare(callbackContext);
-                            }
-                        });
-                    }
-                });
-                return true;
-            }
-            else if (action.equals("destroy")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        destroy(callbackContext);
-                    }
-                });
-                return true;
-            }
-            else if (action.equals("getStatus")) {
-                cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                        getStatus(callbackContext);
-                    }
-                });
-                return true;
-            } else if(action.equals("nativeCamera")) {
+             if(action.equals("nativeCamera")) {
 
                 /*cordova.getThreadPool().execute(new Runnable() {
                     public void run() {
@@ -184,8 +122,6 @@ public class MediaCapture extends CordovaPlugin {
             intent.putExtra("RECORD_LABEL", "Nauhoita");
             cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
         }
-
-        
     }
 
     @Override
@@ -202,24 +138,6 @@ public class MediaCapture extends CordovaPlugin {
         }
     }//onActivityResult
 
-    @Override
-    public void onPause(boolean multitasking) {
-        if (previewing) {
-            this.appPausedWithActivePreview = true;
-            this.pausePreview(null);
-        }
-    }
-
-    @Override
-    public void onResume(boolean multitasking) {
-        if (this.appPausedWithActivePreview) {
-            this.appPausedWithActivePreview = false;
-            this.resumePreview(null);
-        }
-    }
-
-    
-
     private String boolToNumberString(Boolean bool) {
         if(bool)
             return "1";
@@ -227,18 +145,14 @@ public class MediaCapture extends CordovaPlugin {
             return "0";
     }
 
-    
-
     public int getCurrentCameraId() {
         return this.currentCameraId;
     }
-
-    
    
     public void onRequestPermissionResult(int requestCode, String[] permissions,
                                           int[] grantResults) throws JSONException {
         oneTime = false;
-        if (requestCode == 33) {
+        if (requestCode == CAMERA_PERMISSIONS) {
             // for each permission check if the user granted/denied them
             // you may want to group the rationale in a single dialog,
             // this is just an example
@@ -248,26 +162,20 @@ public class MediaCapture extends CordovaPlugin {
                     boolean showRationale = ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(), permission);
                     if (! showRationale) {
                         // user denied flagging NEVER ASK AGAIN
-                        denied = true;
-                        authorized = false;
+                        //denied = true;
+                        //authorized = false;
                         callbackContext.error(MediaCaptureError.CAMERA_ACCESS_DENIED);
                         return;
                     } else {
-                        authorized = false;
-                        denied = false;
+                        //authorized = false;
+                        //denied = false;
                         callbackContext.error(MediaCaptureError.CAMERA_ACCESS_DENIED);
                         return;
                     }
                 } else if (grantResults[i] == PackageManager.PERMISSION_GRANTED){
-                    authorized = true;
-                    denied = false;
-                    switch (requestCode) {
-                        case 33:
-                            Intent intent = new Intent(cordova.getActivity().getApplicationContext(), MainActivity.class);
-                            intent.putExtra("RECORD_LABEL", "Nauhoita");
-                            cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
-                        break;
-                    }
+                    //authorized = true;
+                    //denied = false;
+                   
                 }
                 else {
                     authorized = false;
@@ -275,8 +183,20 @@ public class MediaCapture extends CordovaPlugin {
                     restricted = false;
                 }
             }
+            if (areAllPermissionsGranted(grantResults)) {
+                            
+                Intent intent = new Intent(cordova.getActivity().getApplicationContext(), MainActivity.class);
+                intent.putExtra("RECORD_LABEL", "Nauhoita");
+                cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
+            }
         }
     }
+
+    public static boolean areAllPermissionsGranted(int[] grantResults)
+{
+    for(int grantResult : grantResults) if(grantResult != PackageManager.PERMISSION_GRANTED) return false;
+    return true;
+}
 
     public boolean hasPermission() {
         for(String p : permissions)
@@ -293,30 +213,6 @@ public class MediaCapture extends CordovaPlugin {
         PermissionHelper.requestPermissions(this, requestCode, permissions);
     }
 
-    private void closeCamera() {
-        cameraClosing = true;
-        cordova.getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                /*if (mBarcodeView != null) {
-                    mBarcodeView.pause();
-                }*/
-
-                cameraClosing = false;
-            }
-        });
-    }
-
-    private void makeOpaque() {
-        this.cordova.getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                webView.getView().setBackgroundColor(Color.TRANSPARENT);
-            }
-        });
-        showing = false;
-    }
-
     private boolean hasCamera() {
         if (this.cordova.getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
             return true;
@@ -324,201 +220,5 @@ public class MediaCapture extends CordovaPlugin {
             return false;
         }
     }
-
-   
-    private void setupCamera(CallbackContext callbackContext) {
-        cordova.getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                // Create our Preview view and set it as the content of our activity.
-                /*mBarcodeView = new BarcodeView(cordova.getActivity());
-
-                //Configure the camera (front/back)
-                CameraSettings settings = new CameraSettings();
-                settings.setRequestedCameraId(getCurrentCameraId());
-                mBarcodeView.setCameraSettings(settings);
-
-                FrameLayout.LayoutParams cameraPreviewParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-                ((ViewGroup) webView.getView().getParent()).addView(mBarcodeView, cameraPreviewParams);
-
-                cameraPreviewing = true;
-                webView.getView().bringToFront();
-
-                mBarcodeView.resume();*/
-            }
-        });
-        prepared = true;
-        previewing = true;
-    }
-
-    // ---- BEGIN EXTERNAL API ----
-    private void prepare(final CallbackContext callbackContext) {
-        /*if(!prepared) {
-            if(currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
-                if (hasCamera()) {
-                    if (!hasPermission()) {
-                        requestPermission(33);
-                    }
-                    else {
-                        setupCamera(callbackContext);
-                        getStatus(callbackContext);
-                    }
-                }
-                else {
-                    callbackContext.error(MediaCaptureError.BACK_CAMERA_UNAVAILABLE);
-                }
-            }
-            else if(currentCameraId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                if (hasFrontCamera()) {
-                    if (!hasPermission()) {
-                        requestPermission(33);
-                    }
-                    else {
-                        setupCamera(callbackContext);
-                        getStatus(callbackContext);
-                    }
-                }
-                else {
-                    callbackContext.error(MediaCaptureError.FRONT_CAMERA_UNAVAILABLE);
-                }
-            }
-            else {
-                callbackContext.error(MediaCaptureError.CAMERA_UNAVAILABLE);
-            }
-        }
-        else {
-            prepared = false;
-            this.cordova.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mBarcodeView.pause();
-                }
-            });
-            if(cameraPreviewing) {
-                this.cordova.getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((ViewGroup) mBarcodeView.getParent()).removeView(mBarcodeView);
-                        cameraPreviewing = false;
-                    }
-                });
-
-                previewing = true;
-                lightOn = false;
-            }
-            setupCamera(callbackContext);
-            getStatus(callbackContext);
-        }*/
-    }
     
-    private void show(final CallbackContext callbackContext) {
-        this.cordova.getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                webView.getView().setBackgroundColor(Color.argb(1, 0, 0, 0));
-                showing = true;
-                getStatus(callbackContext);
-            }
-        });
-    }
-
-    private void hide(final CallbackContext callbackContext) {
-        makeOpaque();
-        getStatus(callbackContext);
-    }
-
-    private void pausePreview(final CallbackContext callbackContext) {
-        this.cordova.getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                /*if(mBarcodeView != null) {
-                    mBarcodeView.pause();
-                    previewing = false;
-                    
-                }*/
-                
-                if (callbackContext != null)
-                    getStatus(callbackContext);
-            }
-        });
-
-    }
-
-    private void resumePreview(final CallbackContext callbackContext) {
-        this.cordova.getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                /*if(mBarcodeView != null) {
-                    mBarcodeView.resume();
-                    previewing = true;
-                    
-                }*/
-                
-                if (callbackContext != null)
-                    getStatus(callbackContext);
-            }
-        });
-    }
-
-    
-
-    
-
-    private void getStatus(CallbackContext callbackContext) {
-
-        /*if(oneTime) {
-            boolean authorizationStatus = hasPermission();
-
-            authorized = false;
-            if (authorizationStatus)
-                authorized = true;
-
-            if(keepDenied && !authorized)
-                denied = true;
-            else
-                denied = false;
-
-            //No applicable API
-            restricted = false;
-        }
-        boolean canOpenSettings = true;
-
-        HashMap status = new HashMap();
-        status.put("authorized",boolToNumberString(authorized));
-        status.put("denied",boolToNumberString(denied));
-        status.put("restricted",boolToNumberString(restricted));
-        status.put("prepared",boolToNumberString(prepared));
-        status.put("previewing",boolToNumberString(previewing));
-        status.put("showing",boolToNumberString(showing));
-        status.put("canOpenSettings",boolToNumberString(canOpenSettings));
-        status.put("currentCamera",Integer.toString(getCurrentCameraId()));
-        status.put("recording",boolToNumberString(recording));
-        status.put("muted",boolToNumberString(muted));
-        status.put("paused",boolToNumberString(paused));
-
-
-        JSONObject obj = new JSONObject(status);
-        //PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
-        callbackContext.success(obj);*/
-    }
-
-    private void destroy(CallbackContext callbackContext) {
-        /*prepared = false;
-        makeOpaque();
-        previewing = false;
-
-        if(cameraPreviewing) {
-            this.cordova.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    ((ViewGroup) mBarcodeView.getParent()).removeView(mBarcodeView);
-                    cameraPreviewing = false;
-                }
-            });
-        }
-       
-        closeCamera();
-        currentCameraId = 0;
-        getStatus(callbackContext);*/
-    }
 }

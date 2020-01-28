@@ -355,24 +355,7 @@ public class MainActivity extends FragmentActivity {
 
     public void openCamera(int width, int height) {
         try {
-
-
-            /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                    ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                    ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-
-                ActivityCompat.requestPermissions(this,new String[] {android.Manifest.permission.CAMERA,
-                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        android.Manifest.permission.RECORD_AUDIO},CAMERA_PERMISSIONS);
-                return;
-            }*/
+           
             try {
                 CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                 String[] cameraIds = manager.getCameraIdList();
@@ -485,44 +468,7 @@ public class MainActivity extends FragmentActivity {
                     (long) rhs.getWidth() * rhs.getHeight());
         }
     }
-
-
-
-    /*@SuppressLint("MissingPermission")
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case CAMERA_PERMISSIONS: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[1] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
-                    try {
-                        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-                        String[] cameraIds = manager.getCameraIdList();
-
-                        String camerId = manager.getCameraIdList()[0];
-                        CameraCharacteristics characteristics = manager.getCameraCharacteristics(camerId);
-                        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                        previewsize = map.getOutputSizes(SurfaceTexture.class)[0];
-
-                            manager.openCamera(camerId, stateCallback, null);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-
-            // other 'case' lines to check for other
-            // permissions this app might request.
-        }
-    }*/
+    
 
     private TextureView.SurfaceTextureListener surfaceTextureListener=new TextureView.SurfaceTextureListener() {
         @Override
