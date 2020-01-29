@@ -23,6 +23,7 @@ import android.support.v4.app.ActivityCompat;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -30,6 +31,9 @@ import java.util.List;
 import android.content.Context;
 import android.content.Intent;
 import android.app.Activity;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import android.os.Environment;
 
 
 @SuppressWarnings("deprecation")
@@ -122,8 +126,32 @@ public class MediaCapture extends CordovaPlugin {
         } else {
             Intent intent = new Intent(context, MainActivity.class);
             intent.putExtra("VIDEO_MAX_LENGTH", lengthInSeconds);
+            intent.putExtra("NEXT_VIDEO_URL", createCaptureFile().getAbsolutePath());
             cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
         }
+    }
+
+    private File createCaptureFile() {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());       
+        return new File(getTempDirectoryPath(),
+            "vid_" + timeStamp + ".mp4");
+    }
+
+    private String getTempDirectoryPath() {
+        File cache = null;
+
+        // SD Card Mounted
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            cache = cordova.getActivity().getExternalCacheDir();
+        }
+        // Use internal storage
+        else {
+            cache = cordova.getActivity().getCacheDir();
+        }
+
+        // Create the cache directory if it doesn't exist
+        cache.mkdirs();
+        return cache.getAbsolutePath();
     }
 
     @Override

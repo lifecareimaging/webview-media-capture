@@ -57,6 +57,7 @@ import static android.media.MediaRecorder.VideoEncoder.H264;
 import android.content.Intent;
 import java.util.Timer;
 import java.util.TimerTask;
+import android.view.MotionEvent;
 
 
 
@@ -89,6 +90,7 @@ public class MainActivity extends FragmentActivity {
     private String lastRecordedFileUrl;
     private Timer myTimer;
     private Button recordVideoButton;
+    private Button cancelButton;
     private int secondsElapsed=0;
     private int videoMaxLengthInSeconds;
 
@@ -112,9 +114,17 @@ public class MainActivity extends FragmentActivity {
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        hideSystemViews();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+
+        hideSystemViews();
 
         RelativeLayout relLayout = new RelativeLayout(this);
         relLayout.setBackgroundColor(Color.BLACK);
@@ -129,17 +139,43 @@ public class MainActivity extends FragmentActivity {
         Intent intent = getIntent();
         videoMaxLengthInSeconds = intent.getIntExtra("VIDEO_MAX_LENGTH", 60);
 
+
+        cancelButton = new Button(this);
+        cancelButton.setText("Cancel");
+        RelativeLayout.LayoutParams cancelButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        cancelButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        cancelButtonLayoutParams.addRule((RelativeLayout.ALIGN_PARENT_LEFT));
+        cancelButton.setLayoutParams(cancelButtonLayoutParams);
+
+        recordVideoButton = new Button(this);
         recordVideoButton.setText("Record");
-        RelativeLayout.LayoutParams recordButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        RelativeLayout.LayoutParams recordButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         recordButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        recordButtonLayoutParams.addRule((RelativeLayout.ALIGN_PARENT_RIGHT));
+
+        recordButtonLayoutParams.addRule(RelativeLayout.RIGHT_OF, cancelButton.getId());
+
         recordVideoButton.setLayoutParams(recordButtonLayoutParams);
+
+
         Button stopRecordingButton = new Button(this);
 
         stopRecordingButton.setText("Stop recording");
         stopRecordingButton.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT));
 
         relLayout.addView(recordVideoButton);
+        relLayout.addView(cancelButton);
         relLayout.addView(stopRecordingButton);
+
+        relLayout.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                // ... Respond to touch events
+                hideSystemViews();
+                return true;
+            }
+        });
+
+
         setContentView(relLayout);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
 
@@ -149,6 +185,14 @@ public class MainActivity extends FragmentActivity {
                 startRecordingVideo();
             }
         });
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                cancelActivity();
+            }
+        });
+
 
 
         stopRecordingButton.setOnClickListener(new View.OnClickListener() {
@@ -168,19 +212,10 @@ public class MainActivity extends FragmentActivity {
         recorder.setOutputFormat(MPEG_4);
 
         try{
-            File file = new File(Environment.getExternalStorageDirectory(),VIDEO_PATH_NAME);
-            if(!file.exists()) {
-                File parent = file.getParentFile();
-                if(parent != null)
-                    if(!parent.exists())
-                        if(!parent.mkdirs())
-                            throw new IOException("Cannot create " +
-                                    "parent directories for file: " + file);
-
-                file.createNewFile();
-            }
-            lastRecordedFileUrl= file.getAbsolutePath();
-            recorder.setOutputFile(file.getAbsolutePath());
+                        
+            Intent intent = getIntent();
+            lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  //createCaptureFile().getAbsolutePath();
+            recorder.setOutputFile(lastRecordedFileUrl);
 
             CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
             //CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
@@ -209,35 +244,25 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private File getOutputMediaFile() {
-        // External sdcard file location
-        File mediaStorageDir = new File(Environment.getExternalStorageDirectory(),
-                VIDEO_DIRECTORY_NAME);
-        // Create storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.d("", "Oops! Failed create "
-                        + VIDEO_DIRECTORY_NAME + " directory");
-                return null;
-            }
-        }
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
-                Locale.getDefault()).format(new Date());
-        File mediaFile;
-        mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "VID_" + timeStamp + ".mp4");
-        return mediaFile;
-    }
-
-
+   
     private void startBackgroundThread() {
         backgroundThread = new HandlerThread("CameraBackground");
         backgroundThread.start();
         backgroundHandler = new Handler(backgroundThread.getLooper());
     }
 
+    public void cancelActivity() {
 
+        if (isRecordingVideo) {
+            File file = new File(lastRecordedFileUrl);
+            file.delete();
+        }
+        finish();
+    }
     public void startRecordingVideo() {
+        if (isRecordingVideo) {
+            return;
+        }
         if (null == cameraDevice || !textureView.isAvailable() || null == previewsize) {
             return;
         }
@@ -270,6 +295,7 @@ public class MainActivity extends FragmentActivity {
                         isRecordingVideo = true;
                         // Start recording
                         recorder.start();
+
 
                         myTimer = new Timer();
                         myTimer.schedule(new TimerTask() {          
@@ -320,6 +346,18 @@ public class MainActivity extends FragmentActivity {
     }
 
 
+    private void hideSystemViews() {
+        View decorView = getWindow().getDecorView();
+        // Hide both the navigation bar and the status bar.
+        // SYSTEM_UI_FLAG_FULLSCREEN is only available on Android 4.1 and higher, but as
+        // a general rule, you should design your app to hide the status bar whenever you
+        // hide the navigation bar.
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN |  View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE;
+        decorView.setSystemUiVisibility(uiOptions);
+    }
 
 
 
@@ -526,8 +564,7 @@ public class MainActivity extends FragmentActivity {
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             cameraDevice = null;
-
-            MainActivity.this.finish();
+            cancelActivity();
 
         }
     };
@@ -576,8 +613,17 @@ public class MainActivity extends FragmentActivity {
     public void onResume() {
         super.onResume();
         startBackgroundThread();
+        hideSystemViews();
         //requestPermission();
     }
+
+    @Override
+    public void onBackPressed() {
+    // TODO Auto-generated method stub
+   // do your stuff  here
+    cancelActivity();
+    super.onBackPressed();
+}
 
     void  startCamera() {
 
