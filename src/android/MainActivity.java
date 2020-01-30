@@ -96,6 +96,8 @@ public class MainActivity extends FragmentActivity {
     private Button cancelButton;
     private int secondsElapsed=0;
     private int videoMaxLengthInSeconds;
+    ViewSizeCalculator viewSizeCalculator;
+
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -124,6 +126,9 @@ public class MainActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        viewSizeCalculator = new ViewSizeCalculator();
+
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
 
@@ -220,8 +225,14 @@ public class MainActivity extends FragmentActivity {
             lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  //createCaptureFile().getAbsolutePath();
             recorder.setOutputFile(lastRecordedFileUrl);
 
-            CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
-            //CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
+            //always default to full hd even thou the videosize might be different
+            CamcorderProfile profile =CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);;
+            if (viewSizeCalculator.selectedVideoSize.getHeight() ==720) {
+                profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
+            }
+            else if (viewSizeCalculator.selectedVideoSize.getHeight() ==480) {
+                profile = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
+            }
             recorder.setVideoFrameRate(profile.videoFrameRate);
             recorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
             recorder.setVideoEncodingBitRate(profile.videoBitRate);
@@ -418,10 +429,11 @@ public class MainActivity extends FragmentActivity {
                 if (map == null) {
                     throw new RuntimeException("Cannot get available preview/video sizes");
                 }
-                videoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
-                previewsize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                        width, height, videoSize);
+                viewSizeCalculator.chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
                 int orientation = getResources().getConfiguration().orientation;
+
+                previewsize = viewSizeCalculator.chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                        width, height, orientation);
                 if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     textureView.setAspectRatio(previewsize.getWidth(), previewsize.getHeight());
                 } else {
@@ -463,60 +475,10 @@ public class MainActivity extends FragmentActivity {
     }
 
 
-    private static Size chooseVideoSize(Size[] choices) {
-        for (Size size : choices) {
-            if (1920 == size.getWidth() && 1080 == size.getHeight()) {
-                return size;
-            }
-        }
-        for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
-                return size;
-            }
-        }
-        Log.e("", "Couldn't find any suitable video size");
-        return choices[choices.length - 1];
-    }
+    
 
+   
 
-    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        List<Size> bigEnough = new ArrayList<>();
-        int w = aspectRatio.getWidth();
-        int h = aspectRatio.getHeight();
-        for (Size option : choices) {
-
-            /*if (640 == option.getWidth() && 480 == option.getHeight()) {
-                return option;
-            } //try out for 480p*/
-
-
-            if (1920 == option.getWidth() && 1080 == option.getHeight()) {
-                return option;
-            } //always choose full hd
-
-            if (option.getHeight() == option.getWidth() * h / w &&
-                    option.getWidth() >= width && option.getHeight() >= height) {
-                bigEnough.add(option);
-            }
-        }
-        // Pick the smallest of those, assuming we found any
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else {
-            Log.e("", "Couldn't find any suitable preview size");
-            return choices[0];
-        }
-    }
-
-    static class CompareSizesByArea implements Comparator<Size> {
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-    }
     
 
     private TextureView.SurfaceTextureListener surfaceTextureListener=new TextureView.SurfaceTextureListener() {
@@ -679,21 +641,5 @@ public class MainActivity extends FragmentActivity {
             }
         }
     }
-
-    /*void getChangedPreview()
-    {
-        if(cameraDevice==null)
-        {
-            return;
-        }
-        previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-        HandlerThread thread=new HandlerThread("changed Preview");
-        thread.start();
-        Handler handler=new Handler(thread.getLooper());
-        try
-        {
-            previewSession.setRepeatingRequest(previewBuilder.build(), null, handler);
-        }catch (Exception e){}
-    }*/
 
 }

@@ -29,6 +29,7 @@
     <source-file src="src/android/MediaCapture.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
     <source-file src="src/android/MainActivity.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
     <source-file src="src/android/AutoFitTextureView.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
+    <source-file src="src/android/ViewSizeCalculator.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
     <framework src="src/android/mediacapture.gradle" custom="true" type="gradleReference"/>
   </platform>
   <platform name="ios">
