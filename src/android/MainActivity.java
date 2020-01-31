@@ -61,7 +61,14 @@ import android.view.MotionEvent;
 
 import android.os.Build;
 import android.content.pm.ActivityInfo;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.graphics.Color;
+import android.support.design.widget.FloatingActionButton;
 
+import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 
 
 public class MainActivity extends FragmentActivity {
@@ -92,11 +99,14 @@ public class MainActivity extends FragmentActivity {
     private Size videoSize;
     private String lastRecordedFileUrl;
     private Timer myTimer;
-    private Button recordVideoButton;
-    private Button cancelButton;
+    private FloatingActionButton recordVideoButton;
+    private FloatingActionButton cancelButton;
+    private FloatingActionButton stopRecordingButton;
+
     private int secondsElapsed=0;
     private int videoMaxLengthInSeconds;
     ViewSizeCalculator viewSizeCalculator;
+    TextView recordLengthTextView;
 
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -134,6 +144,9 @@ public class MainActivity extends FragmentActivity {
 
         hideSystemViews();
 
+        Intent intent = getIntent();
+        videoMaxLengthInSeconds = intent.getIntExtra("VIDEO_MAX_LENGTH", 60);
+
         RelativeLayout relLayout = new RelativeLayout(this);
         relLayout.setBackgroundColor(Color.BLACK);
         RelativeLayout.LayoutParams relLayoutParam = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
@@ -142,38 +155,68 @@ public class MainActivity extends FragmentActivity {
         textureView.setLayoutParams(relLayoutParam);
         relLayout.addView(textureView);
 
-        recordVideoButton = new Button(this);
 
-        Intent intent = getIntent();
-        videoMaxLengthInSeconds = intent.getIntExtra("VIDEO_MAX_LENGTH", 60);
+        LinearLayout controlPanel = new LinearLayout(this);
+        RelativeLayout.LayoutParams controlPanelParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        controlPanelParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        controlPanelParams.bottomMargin = 65;
+        controlPanel.setOrientation(LinearLayout.VERTICAL);
+        controlPanel.setLayoutParams(controlPanelParams);
+        controlPanel.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        LinearLayout buttonContainer = new LinearLayout(this);
+        LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        buttonContainer.setGravity(Gravity.CENTER);
+        buttonContainer.setLayoutParams(containerParams);
 
 
-        cancelButton = new Button(this);
-        cancelButton.setText("Cancel");
+        cancelButton = new FloatingActionButton(this);
+        cancelButton.setAlpha(0.66f);
+        cancelButton.setSize(1);
+        cancelButton.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+        cancelButton.setBackgroundTintList(ColorStateList.valueOf(Color.RED));
         RelativeLayout.LayoutParams cancelButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         cancelButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         cancelButtonLayoutParams.addRule((RelativeLayout.ALIGN_PARENT_LEFT));
         cancelButton.setLayoutParams(cancelButtonLayoutParams);
 
-        recordVideoButton = new Button(this);
-        recordVideoButton.setText("Record");
+        recordVideoButton = new FloatingActionButton(this);
+        recordVideoButton.setAlpha(0.66f);
+        recordVideoButton.setImageResource(android.R.drawable.ic_menu_camera);
+        recordVideoButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(41,184,255)));
         RelativeLayout.LayoutParams recordButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         recordButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        recordButtonLayoutParams.addRule((RelativeLayout.ALIGN_PARENT_RIGHT));
-
         recordButtonLayoutParams.addRule(RelativeLayout.RIGHT_OF, cancelButton.getId());
-
+        recordButtonLayoutParams.setMarginStart(150);
         recordVideoButton.setLayoutParams(recordButtonLayoutParams);
 
+        stopRecordingButton = new FloatingActionButton(this);
+        stopRecordingButton.setAlpha(0.66f);
+        stopRecordingButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(87,130,96)));
+        RelativeLayout.LayoutParams stopRecordingButtonParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        stopRecordingButton.setImageResource(android.R.drawable.ic_menu_save);
+        stopRecordingButton.hide();
+        stopRecordingButtonParams.setMarginStart(150);
+        stopRecordingButton.setLayoutParams(stopRecordingButtonParams);
 
-        Button stopRecordingButton = new Button(this);
 
-        stopRecordingButton.setText("Stop recording");
-        stopRecordingButton.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT));
+        recordLengthTextView = new TextView(this);
+        recordLengthTextView.setTextColor(Color.WHITE);
+        recordLengthTextView.setTextSize(20);
+        recordLengthTextView.setText("00:00/15:00");
 
-        relLayout.addView(recordVideoButton);
-        relLayout.addView(cancelButton);
-        relLayout.addView(stopRecordingButton);
+        RelativeLayout.LayoutParams  textParams= new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        textParams.bottomMargin = 65;
+        recordLengthTextView.setLayoutParams(textParams);
+
+        buttonContainer.addView(cancelButton);
+        buttonContainer.addView(recordVideoButton);
+        buttonContainer.addView(stopRecordingButton);
+
+
+        controlPanel.addView(recordLengthTextView);
+        controlPanel.addView(buttonContainer);
+        relLayout.addView(controlPanel);
 
         relLayout.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {
@@ -310,6 +353,9 @@ public class MainActivity extends FragmentActivity {
                         // Start recording
                         recorder.start();
                         lockDeviceRotation(true);
+                        stopRecordingButton.show();
+                        recordVideoButton.hide();
+                        stopRecordingButton.setAlpha(0.66f);
 
 
                         myTimer = new Timer();
@@ -351,7 +397,7 @@ public class MainActivity extends FragmentActivity {
 
     private Runnable Timer_Tick = new Runnable() {
         public void run() {
-            recordVideoButton.setText(secondsToString(secondsElapsed)  +"/" +secondsToString(videoMaxLengthInSeconds));
+            recordLengthTextView.setText(secondsToString(secondsElapsed)  +"/" +secondsToString(videoMaxLengthInSeconds));
         }
     };
 

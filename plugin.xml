@@ -23,7 +23,7 @@
     </config-file>
 
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
-      <activity android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:name="com.lifecare.cordova.mediacapture.MainActivity"></activity>
+      <activity android:theme="@style/Theme.AppCompat.NoActionBar" android:name="com.lifecare.cordova.mediacapture.MainActivity"></activity>
 
     </config-file>
     <source-file src="src/android/MediaCapture.java" target-dir="src/com/lifecare/cordova/mediacapture"/>

@@ -8,8 +8,6 @@ import android.graphics.Color;
 import android.hardware.camera2.CameraAccessException;
 import android.net.Uri;
 
-
-
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PluginResult;
