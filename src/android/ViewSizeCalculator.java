@@ -23,7 +23,8 @@ public class ViewSizeCalculator {
             if (1280 == size.getWidth() && 720 == size.getHeight()) {
                 validSizes.add(size);
             }
-            if (720 == size.getWidth() && 480 == size.getHeight()) {
+             //480p standard varies by models
+             if (480 == size.getHeight()) {
                 validSizes.add(size);
             }
 
