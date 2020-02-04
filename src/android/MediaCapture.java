@@ -87,21 +87,16 @@ public class MediaCapture extends CordovaPlugin {
             
              if(action.equals("nativeCamera")) {
 
-                /*cordova.getThreadPool().execute(new Runnable() {
-                    public void run() {
-                cordova.getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {*/
-                        try {
-                            lengthInSeconds = args.getInt(0);
-                            openNewActivity(context);
-                        } catch(Exception e) 
-                        {
-                            lastException= e;
-                            callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
-                        }
-                //    }});
-                //}});
+                
+                try {
+                    lengthInSeconds = args.getInt(0);
+                    openNewActivity(context);
+                } catch(Exception e) 
+                {
+                    lastException= e;
+                    callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
+                }
+               
                 return true;
             } else if (action.equals("getLastError")) {
                 callbackContext.success(lastException.getMessage());
@@ -214,7 +209,8 @@ public class MediaCapture extends CordovaPlugin {
             if (areAllPermissionsGranted(grantResults)) {
                             
                 Intent intent = new Intent(cordova.getActivity().getApplicationContext(), MainActivity.class);
-                intent.putExtra("RECORD_LABEL", "Nauhoita");
+                intent.putExtra("VIDEO_MAX_LENGTH", lengthInSeconds);
+                intent.putExtra("NEXT_VIDEO_URL", createCaptureFile().getAbsolutePath());
                 cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
             }
         }

@@ -390,6 +390,7 @@ public class MainActivity extends FragmentActivity {
 
     private void TimerMethod()
     {
+        if (!isRecordingVideo) { return; }
         secondsElapsed++;
         MainActivity.this.runOnUiThread(Timer_Tick);
     }
@@ -425,6 +426,7 @@ public class MainActivity extends FragmentActivity {
     public void stopRecordingVideo() {
         // UI
         isRecordingVideo = false;
+        myTimer.cancel();
         try {
             previewSession.stopRepeating();
             previewSession.abortCaptures();
