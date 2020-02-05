@@ -359,6 +359,9 @@ public class MainActivity extends FragmentActivity {
     {
         if (!isRecordingVideo) { return; }
         secondsElapsed++;
+        if (secondsElapsed>= videoMaxLengthInSeconds) {
+            stopRecordingVideo();
+        }
         MainActivity.this.runOnUiThread(Timer_Tick);
     }
 
