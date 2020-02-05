@@ -1,6 +1,5 @@
 package com.lifecare.cordova.mediacapture;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -17,13 +16,10 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -32,27 +28,17 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Semaphore;
 
-import android.support.v4.app.ActivityCompat;
-import android.content.pm.PackageManager;
-import android.Manifest;
 import android.widget.RelativeLayout;
 
 import static android.media.MediaRecorder.OutputFormat.MPEG_4;
-import static android.media.MediaRecorder.VideoEncoder.H264;
 
 import android.content.Intent;
 import java.util.Timer;
@@ -62,54 +48,36 @@ import android.view.MotionEvent;
 import android.os.Build;
 import android.content.pm.ActivityInfo;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.graphics.Color;
 import android.support.design.widget.FloatingActionButton;
 
 import android.content.res.ColorStateList;
-import android.content.res.Configuration;
 
 
 public class MainActivity extends FragmentActivity {
 
     private Size previewsize;
-    private Size jpegSizes[] = null;
 
     private AutoFitTextureView textureView;
     private CameraDevice cameraDevice;
     private CaptureRequest.Builder previewBuilder;
     private CameraCaptureSession previewSession;
-    Button getpicture;
-    Button stopvideo;
     private final int CAMERA_PERMISSIONS = 10001;
     private MediaRecorder recorder;
-    private Surface mainsurface;
-    private static final String VIDEO_PATH_NAME = "/Videos/sample.mp4";
-    private static final String VIDEO_DIRECTORY_NAME = "SampleVideos";
-    private static final String VIDEO_MAX_LENGTH  = "VIDEO_MAX_LENGTH";
-
-
     private boolean isRecordingVideo = false;
-
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
-
     private Integer sensorOrientation;
-    private Size videoSize;
     private String lastRecordedFileUrl;
     private Timer myTimer;
     private FloatingActionButton recordVideoButton;
     private FloatingActionButton cancelButton;
     private FloatingActionButton stopRecordingButton;
-
     private int secondsElapsed=0;
     private int videoMaxLengthInSeconds;
-    ViewSizeCalculator viewSizeCalculator;
-    TextView recordLengthTextView;
+    private ViewSizeCalculator viewSizeCalculator;
+    private TextView recordLengthTextView;
 
-
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
     private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
@@ -146,6 +114,11 @@ public class MainActivity extends FragmentActivity {
 
         Intent intent = getIntent();
         videoMaxLengthInSeconds = intent.getIntExtra("VIDEO_MAX_LENGTH", 60);
+        CreateLayout();
+        
+    }
+
+    private void CreateLayout() {
 
         RelativeLayout relLayout = new RelativeLayout(this);
         relLayout.setBackgroundColor(Color.BLACK);
@@ -155,6 +128,13 @@ public class MainActivity extends FragmentActivity {
         textureView.setLayoutParams(relLayoutParam);
         relLayout.addView(textureView);
 
+        relLayout.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                // ... Respond to touch events
+                hideSystemViews();
+                return true;
+            }
+        });
 
         LinearLayout controlPanel = new LinearLayout(this);
         RelativeLayout.LayoutParams controlPanelParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -180,6 +160,13 @@ public class MainActivity extends FragmentActivity {
         cancelButtonLayoutParams.addRule((RelativeLayout.ALIGN_PARENT_LEFT));
         cancelButton.setLayoutParams(cancelButtonLayoutParams);
 
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                cancelActivity();
+            }
+        });
+
         recordVideoButton = new FloatingActionButton(this);
         recordVideoButton.setAlpha(0.66f);
         recordVideoButton.setImageResource(android.R.drawable.ic_menu_camera);
@@ -190,6 +177,13 @@ public class MainActivity extends FragmentActivity {
         recordButtonLayoutParams.setMarginStart(150);
         recordVideoButton.setLayoutParams(recordButtonLayoutParams);
 
+        recordVideoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startRecordingVideo();
+            }
+        });
+
         stopRecordingButton = new FloatingActionButton(this);
         stopRecordingButton.setAlpha(0.66f);
         stopRecordingButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(87,130,96)));
@@ -199,59 +193,34 @@ public class MainActivity extends FragmentActivity {
         stopRecordingButtonParams.setMarginStart(150);
         stopRecordingButton.setLayoutParams(stopRecordingButtonParams);
 
-
-        recordLengthTextView = new TextView(this);
-        recordLengthTextView.setTextColor(Color.WHITE);
-        recordLengthTextView.setTextSize(20);
-        recordLengthTextView.setText("00:00/15:00");
-
-        RelativeLayout.LayoutParams  textParams= new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        textParams.bottomMargin = 65;
-        recordLengthTextView.setLayoutParams(textParams);
-
-        buttonContainer.addView(cancelButton);
-        buttonContainer.addView(recordVideoButton);
-        buttonContainer.addView(stopRecordingButton);
-
-
-        controlPanel.addView(recordLengthTextView);
-        controlPanel.addView(buttonContainer);
-        relLayout.addView(controlPanel);
-
-        relLayout.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                // ... Respond to touch events
-                hideSystemViews();
-                return true;
-            }
-        });
-
-
-        setContentView(relLayout);
-        textureView.setSurfaceTextureListener(surfaceTextureListener);
-
-        recordVideoButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startRecordingVideo();
-            }
-        });
-
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                cancelActivity();
-            }
-        });
-
-
-
         stopRecordingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 stopRecordingVideo();
             }
         });
+
+        buttonContainer.addView(cancelButton);
+        buttonContainer.addView(recordVideoButton);
+        buttonContainer.addView(stopRecordingButton);
+
+
+        recordLengthTextView = new TextView(this);
+        recordLengthTextView.setTextColor(Color.WHITE);
+        recordLengthTextView.setTextSize(20);
+        recordLengthTextView.setText("00:00/"+ secondsToString(videoMaxLengthInSeconds));
+
+        RelativeLayout.LayoutParams  textParams= new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        textParams.bottomMargin = 65;
+        recordLengthTextView.setLayoutParams(textParams);
+       
+        controlPanel.addView(recordLengthTextView);
+        controlPanel.addView(buttonContainer);
+        relLayout.addView(controlPanel);
+
+        setContentView(relLayout);
+        textureView.setSurfaceTextureListener(surfaceTextureListener);
+        
     }
 
     void prepareMediaRecorder() {
@@ -263,7 +232,7 @@ public class MainActivity extends FragmentActivity {
         recorder.setOutputFormat(MPEG_4);
 
         try{
-                        
+
             Intent intent = getIntent();
             lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  //createCaptureFile().getAbsolutePath();
             recorder.setOutputFile(lastRecordedFileUrl);
@@ -301,7 +270,7 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-   
+
     private void startBackgroundThread() {
         backgroundThread = new HandlerThread("CameraBackground");
         backgroundThread.start();
@@ -331,9 +300,7 @@ public class MainActivity extends FragmentActivity {
             texture.setDefaultBufferSize(previewsize.getWidth(), previewsize.getHeight());
             previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
-            /**
-             * Surface for the camera preview set up
-             */
+
             Surface previewSurface = new Surface(texture);
             surfaces.add(previewSurface);
             previewBuilder.addTarget(previewSurface);
@@ -359,12 +326,12 @@ public class MainActivity extends FragmentActivity {
 
 
                         myTimer = new Timer();
-                        myTimer.schedule(new TimerTask() {          
+                        myTimer.schedule(new TimerTask() {
                             @Override
                             public void run() {
                                 TimerMethod();
                             }
-                    
+
                         }, 0, 1000);
                     });
 
@@ -463,7 +430,7 @@ public class MainActivity extends FragmentActivity {
 
     public void openCamera(int width, int height) {
         try {
-           
+
             try {
                 CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                 String[] cameraIds = manager.getCameraIdList();
@@ -471,7 +438,6 @@ public class MainActivity extends FragmentActivity {
                 String camerId = manager.getCameraIdList()[0];
                 CameraCharacteristics characteristics = manager.getCameraCharacteristics(camerId);
                 StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                //previewsize = map.getOutputSizes(SurfaceTexture.class)[0];
 
                 sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                 if (map == null) {
@@ -522,12 +488,6 @@ public class MainActivity extends FragmentActivity {
         textureView.setTransform(matrix);
     }
 
-
-    
-
-   
-
-    
 
     private TextureView.SurfaceTextureListener surfaceTextureListener=new TextureView.SurfaceTextureListener() {
         @Override
@@ -628,19 +588,15 @@ public class MainActivity extends FragmentActivity {
         super.onResume();
         startBackgroundThread();
         hideSystemViews();
-        //requestPermission();
     }
 
     @Override
     public void onBackPressed() {
-    // TODO Auto-generated method stub
-   // do your stuff  here
-    cancelActivity();
-    super.onBackPressed();
-}
+        cancelActivity();
+        super.onBackPressed();
+    }
 
     void  startCamera() {
-
 
         if (null == cameraDevice || !textureView.isAvailable() || null == previewsize) {
             return;
