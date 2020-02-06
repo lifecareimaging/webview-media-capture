@@ -533,6 +533,7 @@ public class MainActivity extends FragmentActivity {
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             cameraDevice = null;
+            cancelActivity();
 
         }
 
@@ -571,6 +572,7 @@ public class MainActivity extends FragmentActivity {
 
         closeCamera();
         stopBackgroundThread();
+        cancelActivity();
         super.onPause();
     }
 
