@@ -569,10 +569,12 @@ public class MainActivity extends FragmentActivity {
 
     @Override
     protected void onPause() {
-
-        closeCamera();
+        if (isRecordingVideo) {
+            stopRecordingVideo();
+        }
+        //closeCamera();
         stopBackgroundThread();
-        cancelActivity();
+        //cancelActivity();
         super.onPause();
     }
 
