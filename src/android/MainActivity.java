@@ -317,9 +317,9 @@ public class MainActivity extends FragmentActivity {
 
                     MainActivity.this.runOnUiThread(() -> {
                         isRecordingVideo = true;
+                        lockDeviceRotation(true);
                         // Start recording
                         recorder.start();
-                        lockDeviceRotation(true);
                         stopRecordingButton.show();
                         recordVideoButton.hide();
                         stopRecordingButton.setAlpha(0.66f);
