@@ -221,7 +221,8 @@ var cordovaModule = module;
                             MediaCaptureError = {
                                 name: 'UNEXPECTED_ERROR',
                                 code: 0,
-                                _message: 'MediaCapture returned an invalid error code.'
+                                _message: 'MediaCapture returned an invalid error code.',
+                                error: errorMessage
                             };
                             break;
                     }
@@ -249,6 +250,7 @@ var cordovaModule = module;
                     callback(convertStatus(statusDict));
                 };
             }
+
 
             return {
                 prepare: function (callback) {
@@ -324,7 +326,13 @@ var cordovaModule = module;
                         throw new Error('No callback provided to getStatus method.');
                     }
                     cordova.exec(doneCallback(callback), null, 'MediaCapture', 'getStatus', []);
-                }
+                },
+                nativeCamera: function (callback, videoMaxLengthInSeconds) {
+                    cordova.exec(callback, errorCallback(callback), 'MediaCapture', 'nativeCamera', [videoMaxLengthInSeconds]);
+                  },
+                  getLastError: function (callback) {
+                    cordova.exec(callback, null, 'MediaCapture', 'getLastError', []);
+                  },
             };
         };
     }),

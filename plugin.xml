@@ -16,10 +16,20 @@
     </config-file>
     <config-file target="AndroidManifest.xml" parent="/*">
       <uses-permission android:name="android.permission.CAMERA" android:required="false" />
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+      <uses-permission android:name="android.permission.RECORD_AUDIO" />
       <uses-feature android:name="android.hardware.camera" android:required="false" />
       <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     </config-file>
+
+    <config-file target="AndroidManifest.xml" parent="/manifest/application">
+      <activity android:theme="@style/Theme.AppCompat.NoActionBar" android:name="com.lifecare.cordova.mediacapture.MainActivity"></activity>
+
+    </config-file>
     <source-file src="src/android/MediaCapture.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
+    <source-file src="src/android/MainActivity.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
+    <source-file src="src/android/AutoFitTextureView.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
+    <source-file src="src/android/ViewSizeCalculator.java" target-dir="src/com/lifecare/cordova/mediacapture"/>
     <framework src="src/android/mediacapture.gradle" custom="true" type="gradleReference"/>
   </platform>
   <platform name="ios">
