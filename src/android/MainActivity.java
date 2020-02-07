@@ -180,7 +180,12 @@ public class MainActivity extends FragmentActivity {
         recordVideoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startRecordingVideo();
+                try {
+                    startRecordingVideo();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    finish();
+                }
             }
         });
 
@@ -223,7 +228,7 @@ public class MainActivity extends FragmentActivity {
         
     }
 
-    void prepareMediaRecorder() {
+    private void prepareMediaRecorder() throws Exception {
 
         if(recorder==null)
             recorder=new MediaRecorder();
@@ -277,7 +282,7 @@ public class MainActivity extends FragmentActivity {
         backgroundHandler = new Handler(backgroundThread.getLooper());
     }
 
-    public void cancelActivity() {
+    private void cancelActivity() {
 
         if (isRecordingVideo) {
             File file = new File(lastRecordedFileUrl);
@@ -285,7 +290,7 @@ public class MainActivity extends FragmentActivity {
         }
         finish();
     }
-    public void startRecordingVideo() {
+    private void startRecordingVideo() throws Exception {
         if (isRecordingVideo) {
             return;
         }
@@ -393,7 +398,7 @@ public class MainActivity extends FragmentActivity {
 
 
 
-    public void stopRecordingVideo() {
+    private void stopRecordingVideo() {
         // UI
         isRecordingVideo = false;
         myTimer.cancel();
@@ -431,7 +436,7 @@ public class MainActivity extends FragmentActivity {
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
     }
 
-    public void openCamera(int width, int height) {
+    private void openCamera(int width, int height) {
        
             try {
                 CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -460,7 +465,7 @@ public class MainActivity extends FragmentActivity {
 
                 manager.openCamera(camerId, stateCallback, null);
             } catch (CameraAccessException ce) {
-                e.printStackTrace();
+                ce.printStackTrace();
                 //to be define later
             }
             catch (Exception e) {
@@ -604,7 +609,7 @@ public class MainActivity extends FragmentActivity {
         super.onBackPressed();
     }
 
-    void  startCamera() {
+    private void startCamera() {
 
         if (null == cameraDevice || !textureView.isAvailable() || null == previewsize) {
             return;
@@ -636,7 +641,7 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    public void lockDeviceRotation(boolean value) {
+    private void lockDeviceRotation(boolean value) {
         if (value) {
             int currentOrientation = getResources().getConfiguration().orientation;
             if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
