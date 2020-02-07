@@ -234,7 +234,7 @@ public class MainActivity extends FragmentActivity {
         try{
 
             Intent intent = getIntent();
-            lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  //createCaptureFile().getAbsolutePath();
+            lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  
             recorder.setOutputFile(lastRecordedFileUrl);
 
             //always default to full hd even thou the videosize might be different
@@ -264,9 +264,9 @@ public class MainActivity extends FragmentActivity {
 
             recorder.prepare();
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-
+            throw e;    
         }
     }
 
@@ -432,8 +432,7 @@ public class MainActivity extends FragmentActivity {
     }
 
     public void openCamera(int width, int height) {
-        try {
-
+       
             try {
                 CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                 String[] cameraIds = manager.getCameraIdList();
@@ -460,12 +459,14 @@ public class MainActivity extends FragmentActivity {
                 recorder = new MediaRecorder();
 
                 manager.openCamera(camerId, stateCallback, null);
-            } catch (CameraAccessException e) {
+            } catch (CameraAccessException ce) {
                 e.printStackTrace();
+                //to be define later
             }
-        } catch (Exception e) {
-            Log.d("MyCameraApp", e.getMessage());
-        }
+            catch (Exception e) {
+                Log.d("MyCameraApp", e.getMessage());
+                throw e;
+            }
 
     }
 
