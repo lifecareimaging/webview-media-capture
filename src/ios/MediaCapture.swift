@@ -8,12 +8,15 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     var videoIndex = 1
     var mergeIndex = 1
     var finalOutputFileUrl: URL?
+    var oneClipRecord = true
+    var callbackId: String?
+    var pauseEventId: String?
     
     func merge(arrayVideos:[AVAsset], completion:@escaping (_ exporter: AVAssetExportSession) -> ()) -> Void {
         let mainComposition = AVMutableComposition()
         let compositionVideoTrack = mainComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
         compositionVideoTrack?.preferredTransform = CGAffineTransform(rotationAngle: .pi / 2)
-        var time:CMTime = CMTimeMakeWithSeconds(0, preferredTimescale: 1000000)
+        var time:CMTime = CMTimeMakeWithSeconds(0, 1000000)
 
         for (index, videoAsset) in arrayVideos.enumerated() {
             let atTime = time
@@ -21,12 +24,12 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
             let videoTracks = videoAsset.tracks(withMediaType: .video)
             
             if(videoTracks.count > 0) {
-                try! compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoTracks[0], at: atTime)
+                try! compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(kCMTimeZero, videoAsset.duration), of: videoTracks[0], at: atTime)
             }
             
             if(audioTracks.count > 0) {
                 let soundtrackTrack = mainComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-                try! soundtrackTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: audioTracks[0], at: atTime)
+                try! soundtrackTrack?.insertTimeRange(CMTimeRangeMake(kCMTimeZero, videoAsset.duration), of: audioTracks[0], at: atTime)
             }
 
             time = CMTimeAdd(time, videoAsset.duration)
@@ -45,7 +48,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
             print("Error: \(error.domain)")
         }
 
-        let exporter = AVAssetExportSession(asset: mainComposition, presetName: AVAssetExportPresetHighestQuality)
+        let exporter = AVAssetExportSession(asset: mainComposition, presetName: AVAssetExportPreset1920x1080)
         exporter?.outputURL = outputFileURL
         exporter?.outputFileType = AVFileType.mp4
         exporter?.shouldOptimizeForNetworkUse = true
@@ -65,8 +68,30 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         }
     }
     
+    func deleteTempFiles() {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+            for fileUrl in fileURLs {
+                if (fileUrl.lastPathComponent.contains("lccamera")) {
+                    deleteFile(fileUrl: fileUrl)
+                }
+            }
+        } catch {
+            print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
+        }
+    }
+    
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
-        	
+        if(oneClipRecord) {
+            
+            self.captureSession?.removeOutput(self.videoFileOutput!)
+            
+            let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: outputFileURL.absoluteString)
+            self.commandDelegate!.send(pluginResult, callbackId: callbackId)
+        }
     }
     
     class CameraView: UIView {
@@ -131,7 +156,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     var paused: Bool = false
     var recording: Bool = false
     var muted: Bool = false
-
+    
     enum MediaCaptureError: Int32 {
         case unexpected_error = 0,
         camera_access_denied = 1,
@@ -160,6 +185,37 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         self.cameraView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
     }
 
+    @objc func handleInterruption(_ notification: Notification) throws -> Void {
+        guard let info = notification.userInfo,
+            let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+            let type = AVAudioSessionInterruptionType(rawValue: typeValue) else {
+                return
+        }
+
+        do {
+            let audioInput = try self.createCaptureAudioDeviceInput()
+            if type == .began {
+                self.captureSession?.removeInput(audioInput)
+            }
+            else if type == .ended {
+                guard let optionsValue =
+                    info[AVAudioSessionInterruptionOptionKey] as? UInt else {
+                    return
+                }
+                
+                let options = AVAudioSessionInterruptionOptions(rawValue: optionsValue)
+                if options.contains(.shouldResume) {
+                    if self.captureSession!.canAddInput(audioInput) {
+                        self.captureSession?.addInput(audioInput)
+                    }
+                    // Interruption ended - resume playback
+                }
+            }
+        } catch let error as NSError {
+            throw CaptureError.couldNotCaptureInput(error: error)
+        }
+    }
+    
     func sendErrorCode(command: CDVInvokedUrlCommand, error: MediaCaptureError){
         let pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: error.rawValue)
         commandDelegate!.send(pluginResult, callbackId:command.callbackId)
@@ -189,8 +245,9 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         }
     }
 
-    @objc func prepCamera(command: CDVInvokedUrlCommand) -> Bool{
+    @objc func prepCamera(_ command: CDVInvokedUrlCommand) -> Bool{
         let status = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
+        
         if (status == AVAuthorizationStatus.restricted) {
             self.sendErrorCode(command: command, error: MediaCaptureError.camera_access_restricted)
             return false
@@ -229,6 +286,13 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
                 let outputPath = "\(documentsPath)/lccamera\(videoIndex).mp4"
 
                 captureSession = AVCaptureSession()
+                
+                if captureSession!.canSetSessionPreset(AVCaptureSession.Preset.hd1920x1080){
+                    captureSession!.sessionPreset = AVCaptureSession.Preset.hd1920x1080
+                } else {
+                    captureSession!.sessionPreset = AVCaptureSession.Preset.low
+                }
+                
                 outputFileUrl = NSURL(fileURLWithPath: outputPath)
                 captureSession!.addOutput(videoFileOutput!)
 
@@ -338,17 +402,18 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     @objc func prepare(_ command: CDVInvokedUrlCommand){
+        pauseEventId = command.callbackId
         let videoStatus = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
         if (videoStatus == AVAuthorizationStatus.notDetermined) {
             AVCaptureDevice.requestAccess(for: AVMediaType.video, completionHandler: { (granted) -> Void in
                 self.backgroundThread(delay: 0, completion: {
-                    if(self.prepCamera(command: command)){
+                    if(self.prepCamera(command)){
                         self.getStatus(command)
                     }
                 })
             })
         } else {
-            if(self.prepCamera(command: command)){
+            if(self.prepCamera(command)){
                 self.getStatus(command)
             }
         }
@@ -357,13 +422,13 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         if (audioStatus == AVAuthorizationStatus.notDetermined) {
             AVCaptureDevice.requestAccess(for: AVMediaType.audio, completionHandler: { (granted) -> Void in
                 self.backgroundThread(delay: 0, completion: {
-                    if(self.prepCamera(command: command)){
+                    if(self.prepCamera(command)){
                         self.getStatus(command)
                     }
                 })
             })
         } else {
-            if(self.prepCamera(command: command)){
+            if(self.prepCamera(command)){
                 self.getStatus(command)
             }
         }
@@ -393,7 +458,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     @objc func muteSound(_ command: CDVInvokedUrlCommand) {
-        if(self.prepCamera(command: command)) {
+        if(self.prepCamera(command)) {
             muted = true
             let audioConnection :AVCaptureConnection? = videoFileOutput?.connection(with:AVMediaType.audio)
             
@@ -404,7 +469,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     @objc func unmuteSound(_ command: CDVInvokedUrlCommand) {
-        if(self.prepCamera(command: command)) {
+        if(self.prepCamera(command)) {
             muted = false
             let audioConnection :AVCaptureConnection? = videoFileOutput?.connection(with:AVMediaType.audio)
             
@@ -415,60 +480,59 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     @objc func record(_ command: CDVInvokedUrlCommand) {
-        let fileManager = FileManager.default
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        
-        do {
-            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-            for fileUrl in fileURLs {
-                if (fileUrl.lastPathComponent.contains("lccamera")) {
-                    deleteFile(fileUrl: fileUrl)
-                }
-            }
-        } catch {
-            print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
-        }
-        
+        self.deleteTempFiles()
+        videoFileOutput?.movieFragmentInterval = kCMTimeInvalid
         videoFileOutput?.startRecording(to: outputFileUrl! as URL, recordingDelegate: self)
         self.getStatus(command)
     }
 
     @objc func stopRecording(_ command: CDVInvokedUrlCommand) {
         videoFileOutput?.stopRecording()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // Change `2.0` to the desired number of seconds.
-            let fileManager = FileManager.default
-            let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            do {
-                var videos = [AVAsset]()
-                var fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-                fileURLs.sort(by: { (url1: URL, url2: URL) -> Bool in return url1.lastPathComponent < url2.lastPathComponent })
+    
+        callbackId = command.callbackId
+                
+        if(!oneClipRecord) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // Change `2.0` to the desired number of seconds.
+                let fileManager = FileManager.default
+                let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                do {
+                    var videos = [AVAsset]()
+                    var fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+                    fileURLs.sort(by: { (url1: URL, url2: URL) -> Bool in return url1.lastPathComponent < url2.lastPathComponent })
 
-                for fileUrl in fileURLs {
-                    let video = AVAsset(url: fileUrl)
-                    if (fileUrl.lastPathComponent.contains("lccamera")) {
-                        videos.append(video)
+                    for fileUrl in fileURLs {
+                        let video = AVAsset(url: fileUrl)
+                        if (fileUrl.lastPathComponent.contains("lccamera")) {
+                            videos.append(video)
+                        }
                     }
+
+                    self.merge(arrayVideos: videos, completion: { exporter in
+                        for video in videos {
+                            let urlAsset = video as! AVURLAsset
+                            self.deleteFile(fileUrl: urlAsset.url)
+                        }
+                        
+                        self.captureSession?.removeOutput(self.videoFileOutput!)
+                                                
+                        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: exporter.outputURL?.absoluteString)
+                        self.commandDelegate!.send(pluginResult, callbackId: command.callbackId)
+                        self.mergeIndex += 1
+                    })
+                } catch {
+                    print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
                 }
-
-                self.merge(arrayVideos: videos, completion: { exporter in
-                    for video in videos {
-                        let urlAsset = video as! AVURLAsset
-                        self.deleteFile(fileUrl: urlAsset.url)
-                    }
-                    
-                    let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: exporter.outputURL?.absoluteString)
-                    self.commandDelegate!.send(pluginResult, callbackId: command.callbackId)
-                    self.mergeIndex += 1
-                })
-            } catch {
-                print("Error while enumerating files \(documentsURL.path): \(error.localizedDescription)")
             }
         }
     }
 
     @objc func pauseRecording(_ command: CDVInvokedUrlCommand) {
-        videoFileOutput?.stopRecording()
+        if(captureSession?.isRunning == false) {
+            captureSession?.startRunning()
+        }
+        if(videoFileOutput?.isRecording == true) {
+            videoFileOutput?.stopRecording()
+        }
         self.getStatus(command)
     }
 
@@ -478,7 +542,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as! NSString
         let outputPath = "\(documentsPath)/lccamera\(videoIndex).mp4"
         outputFileUrl = NSURL(fileURLWithPath: outputPath)
-
+        
         videoFileOutput?.startRecording(to: outputFileUrl! as URL, recordingDelegate: self)
         self.getStatus(command)
     }
@@ -492,7 +556,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
             if(backCamera != nil && frontCamera != nil){
                 // switch camera
                 currentCamera = index
-                if(self.prepCamera(command: command)){
+                if(self.prepCamera(command)){
                     do {
                         captureSession!.beginConfiguration()
 
@@ -537,13 +601,13 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     @objc func enableLight(_ command: CDVInvokedUrlCommand) {
-        if(self.prepCamera(command: command)){
+        if(self.prepCamera(command)){
             self.configureLight(command: command, state: true)
         }
     }
 
     @objc func disableLight(_ command: CDVInvokedUrlCommand) {
-        if(self.prepCamera(command: command)){
+        if(self.prepCamera(command)){
             self.configureLight(command: command, state: false)
         }
     }
@@ -553,6 +617,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         if(self.captureSession != nil){
             backgroundThread(delay: 0, background: {
                 self.captureSession!.stopRunning()
+                self.deleteTempFiles()
                 self.cameraView.removePreviewLayer()
                 self.captureVideoPreviewLayer = nil
                 self.captureSession = nil
@@ -643,28 +708,5 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
 
         let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: status)
         commandDelegate!.send(pluginResult, callbackId:command.callbackId)
-    }
-
-    @objc func openSettings(_ command: CDVInvokedUrlCommand) {
-        if #available(iOS 10.0, *) {
-            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
-            return
-        }
-        if UIApplication.shared.canOpenURL(settingsUrl) {
-            UIApplication.shared.open(settingsUrl, completionHandler: { (success) in
-                self.getStatus(command)
-            })
-        } else {
-            self.sendErrorCode(command: command, error: MediaCaptureError.open_settings_unavailable)
-            }
-        } else {
-            // pre iOS 10.0
-            if #available(iOS 8.0, *) {
-                UIApplication.shared.openURL(NSURL(string: UIApplication.openSettingsURLString)! as URL)
-                self.getStatus(command)
-            } else {
-                self.sendErrorCode(command: command, error: MediaCaptureError.open_settings_unavailable)
-            }
-        }
     }
 }
