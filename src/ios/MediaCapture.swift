@@ -1,15 +1,18 @@
 import Foundation
 import AVFoundation
 import Photos
+import CallKit
+import CoreTelephony
 
 @objc(MediaCapture)
-class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
+class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObserverDelegate {
+    
     var partIndex = 1
     var finalOutputFileUrl: URL?
     var callbackId: String?
-    var pauseEventId: String?
+    var pauseEventCommand: CDVInvokedUrlCommand?
     var formatter = DateFormatter()
-        
+
     func merge(arrayVideos:[AVAsset], completion:@escaping (_ exporter: AVAssetExportSession) -> ()) -> Void {
         let mainComposition = AVMutableComposition()
         let compositionVideoTrack = mainComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
@@ -79,6 +82,12 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
     }
     
+    func callObserver(_ callObserver: CXCallObserver, callChanged call: CXCall) {
+        if call.isOutgoing == false && call.hasConnected == false && call.hasEnded == false {
+            self.getStatus(pauseEventCommand!)
+        }
+    }
+    
     func removeAllInputs() {
         for input in captureSession!.inputs {
             captureSession?.removeInput(input)
@@ -131,6 +140,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
     }
 
     var cameraView: CameraView!
+    var callObserver: CXCallObserver?
     var captureSession:AVCaptureSession?
     var commandCallbackId: String?
 
@@ -171,7 +181,8 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
 
     override func pluginInitialize() {
         super.pluginInitialize()
-                
+        callObserver = CXCallObserver()
+        callObserver!.setDelegate(self, queue: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(pageDidLoad), name: NSNotification.Name.CDVPageDidLoad, object: nil)
         self.cameraView = CameraView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height))
         self.cameraView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
@@ -401,7 +412,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         partIndex = 1
         self.deleteTempFiles()
         
-        pauseEventId = command.callbackId
+        pauseEventCommand = command
         let videoStatus = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
         if (videoStatus == AVAuthorizationStatus.notDetermined) {
             AVCaptureDevice.requestAccess(for: AVMediaType.video, completionHandler: { (granted) -> Void in
@@ -511,7 +522,6 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         callbackId = command.callbackId
                 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // Change `2.0` to the desired number of seconds.
-            self.removeAllInputs()
             let fileManager = FileManager.default
             let documentsURL = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             do {
@@ -726,6 +736,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate {
         ]
 
         let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: status)
+        pluginResult?.setKeepCallbackAs(true)
         commandDelegate!.send(pluginResult, callbackId:command.callbackId)
     }
 }
