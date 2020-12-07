@@ -15,8 +15,11 @@ import android.support.v4.app.ActivityCompat;
 import java.io.File;
 import android.content.Context;
 import android.app.Activity;
+import android.util.Log;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+
 import android.os.Environment;
 
 
@@ -26,7 +29,7 @@ public class MediaCapture extends CordovaPlugin {
     private static final int CAMERA_PERMISSIONS = 33;
     private CallbackContext callbackContext;
     private boolean cameraClosing;
-    private String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
+    private String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
 
     private Exception lastException =null;
     private int lengthInSeconds = 60;
@@ -46,17 +49,14 @@ public class MediaCapture extends CordovaPlugin {
         try {
 
             if(action.equals("nativeCamera")) {
-
-
                 try {
-                    lengthInSeconds = args.getInt(0);
+                    lengthInSeconds = args.getInt(0) != 0 ? args.getInt(0) : 60;
                     openNewActivity(context);
                 } catch(Exception e)
                 {
-                    lastException= e;
+                    lastException = e;
                     callbackContext.error(MediaCaptureError.UNEXPECTED_ERROR);
                 }
-
                 return true;
             } else if (action.equals("getLastError")) {
                 callbackContext.success(lastException.getMessage());
@@ -80,7 +80,7 @@ public class MediaCapture extends CordovaPlugin {
             Intent intent = new Intent(context, MainActivity.class);
             intent.putExtra("VIDEO_MAX_LENGTH", lengthInSeconds);
             intent.putExtra("NEXT_VIDEO_URL", createCaptureFile().getAbsolutePath());
-            cordova.startActivityForResult((CordovaPlugin) this ,intent,VIDEO_URL);
+            cordova.startActivityForResult((CordovaPlugin) this, intent, VIDEO_URL);
         }
     }
 

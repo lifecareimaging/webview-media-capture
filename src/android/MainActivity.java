@@ -72,6 +72,8 @@ public class MainActivity extends FragmentActivity {
     private Timer myTimer;
     private FloatingActionButton recordVideoButton;
     private FloatingActionButton cancelButton;
+    private FloatingActionButton recordAudioButton;
+    private FloatingActionButton pauseRecordingButton;
     private FloatingActionButton stopRecordingButton;
     private int secondsElapsed=0;
     private int videoMaxLengthInSeconds;
@@ -149,17 +151,28 @@ public class MainActivity extends FragmentActivity {
         buttonContainer.setGravity(Gravity.CENTER);
         buttonContainer.setLayoutParams(containerParams);
 
+        int video_cancel_btn = getResources().getIdentifier("video_cancel_btn","id", getPackageName());
+        int video_record_btn = getResources().getIdentifier("video_record_btn","id", getPackageName());
+        int video_record_audio_btn = getResources().getIdentifier("video_record_audio_btn","id", getPackageName());
+        int video_pause_btn = getResources().getIdentifier("video_pause_btn","id", getPackageName());
+        int video_stop_btn = getResources().getIdentifier("video_stop_btn","id", getPackageName());
+
+        int ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
+        int ic_mic_off_black_24dp = getResources().getIdentifier("ic_mic_off_black_24dp", "drawable", getPackageName());
+        int ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
+        int ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
+        int ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
 
         cancelButton = new FloatingActionButton(this);
         cancelButton.setAlpha(0.66f);
         cancelButton.setSize(1);
+        cancelButton.setId(video_cancel_btn);
         cancelButton.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
-        cancelButton.setBackgroundTintList(ColorStateList.valueOf(Color.RED));
+        cancelButton.setBackgroundTintList(ColorStateList.valueOf(Color.argb(75,30,30,30)));
         RelativeLayout.LayoutParams cancelButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        cancelButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         cancelButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        cancelButtonLayoutParams.addRule((RelativeLayout.ALIGN_PARENT_LEFT));
         cancelButton.setLayoutParams(cancelButtonLayoutParams);
-
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -169,12 +182,14 @@ public class MainActivity extends FragmentActivity {
 
         recordVideoButton = new FloatingActionButton(this);
         recordVideoButton.setAlpha(0.66f);
-        recordVideoButton.setImageResource(android.R.drawable.ic_menu_camera);
-        recordVideoButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(41,184,255)));
+        recordVideoButton.setSize(1);
+        recordVideoButton.setId(video_record_btn);
+        recordVideoButton.setImageResource(ic_radio_button_checked_black_24dp);
+        recordVideoButton.setBackgroundTintList(ColorStateList.valueOf(Color.argb(75,30,30,30)));
         RelativeLayout.LayoutParams recordButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         recordButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         recordButtonLayoutParams.addRule(RelativeLayout.RIGHT_OF, cancelButton.getId());
-        recordButtonLayoutParams.setMarginStart(150);
+        recordButtonLayoutParams.setMarginStart(250);
         recordVideoButton.setLayoutParams(recordButtonLayoutParams);
 
         recordVideoButton.setOnClickListener(new View.OnClickListener() {
@@ -189,13 +204,42 @@ public class MainActivity extends FragmentActivity {
             }
         });
 
+        recordAudioButton = new FloatingActionButton(this);
+        recordAudioButton.setAlpha(0.66f);
+        recordAudioButton.setSize(1);
+        recordAudioButton.setId(video_record_audio_btn);
+        recordAudioButton.setImageResource(ic_mic_black_24dp);
+        recordAudioButton.setBackgroundTintList(ColorStateList.valueOf(Color.argb(75,30,30,30)));
+        RelativeLayout.LayoutParams recordAudioButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        recordAudioButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        recordAudioButtonLayoutParams.addRule(RelativeLayout.RIGHT_OF, recordVideoButton.getId());
+        recordAudioButtonLayoutParams.setMarginStart(250);
+        recordAudioButton.setLayoutParams(recordAudioButtonLayoutParams);
+
+        pauseRecordingButton = new FloatingActionButton(this);
+        pauseRecordingButton.setAlpha(0.66f);
+        pauseRecordingButton.setSize(1);
+        pauseRecordingButton.setId(video_pause_btn);
+        pauseRecordingButton.setBackgroundTintList(ColorStateList.valueOf(Color.argb(75,30,30,30)));
+        RelativeLayout.LayoutParams pauseRecordingButtonParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        pauseRecordingButtonParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        pauseRecordingButtonParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        pauseRecordingButton.setImageResource(ic_pause_black_24dp);
+        pauseRecordingButton.hide();
+        //pauseRecordingButtonParams.setMarginStart(300);
+        pauseRecordingButton.setLayoutParams(pauseRecordingButtonParams);
+
         stopRecordingButton = new FloatingActionButton(this);
         stopRecordingButton.setAlpha(0.66f);
-        stopRecordingButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(87,130,96)));
+        stopRecordingButton.setSize(1);
+        stopRecordingButton.setId(video_stop_btn);
+        stopRecordingButton.setBackgroundTintList(ColorStateList.valueOf(Color.argb(75,30,30,30)));
         RelativeLayout.LayoutParams stopRecordingButtonParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        stopRecordingButton.setImageResource(android.R.drawable.ic_menu_save);
+        stopRecordingButtonParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        stopRecordingButtonParams.addRule(RelativeLayout.RIGHT_OF, pauseRecordingButton.getId());
+        stopRecordingButton.setImageResource(ic_stop_black_24dp);
         stopRecordingButton.hide();
-        stopRecordingButtonParams.setMarginStart(150);
+        stopRecordingButtonParams.setMarginStart(250);
         stopRecordingButton.setLayoutParams(stopRecordingButtonParams);
 
         stopRecordingButton.setOnClickListener(new View.OnClickListener() {
@@ -207,7 +251,9 @@ public class MainActivity extends FragmentActivity {
 
         buttonContainer.addView(cancelButton);
         buttonContainer.addView(recordVideoButton);
+        buttonContainer.addView(pauseRecordingButton);
         buttonContainer.addView(stopRecordingButton);
+        buttonContainer.addView(recordAudioButton);
 
 
         recordLengthTextView = new TextView(this);
@@ -230,13 +276,13 @@ public class MainActivity extends FragmentActivity {
 
     private void prepareMediaRecorder() throws Exception {
 
-        if(recorder==null)
+        if (recorder==null)
             recorder=new MediaRecorder();
         recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         recorder.setOutputFormat(MPEG_4);
 
-        try{
+        try {
 
             Intent intent = getIntent();
             lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  
@@ -336,7 +382,6 @@ public class MainActivity extends FragmentActivity {
                             public void run() {
                                 TimerMethod();
                             }
-
                         }, 0, 1000);
                     });
 
@@ -362,9 +407,10 @@ public class MainActivity extends FragmentActivity {
 
     private void TimerMethod()
     {
+        Log.e("videoMaxLengthInSeconds", Integer.toString(videoMaxLengthInSeconds));
         if (!isRecordingVideo) { return; }
         secondsElapsed++;
-        if (secondsElapsed>= videoMaxLengthInSeconds) {
+        if (secondsElapsed >= videoMaxLengthInSeconds) {
             stopRecordingVideo();
         }
         MainActivity.this.runOnUiThread(Timer_Tick);
@@ -396,8 +442,6 @@ public class MainActivity extends FragmentActivity {
         decorView.setSystemUiVisibility(uiOptions);
     }
 
-
-
     private void stopRecordingVideo() {
         // UI
         isRecordingVideo = false;
@@ -406,16 +450,24 @@ public class MainActivity extends FragmentActivity {
             previewSession.stopRepeating();
             previewSession.abortCaptures();
         } catch (CameraAccessException e) {
+            Log.e("MyCameraApp", e.getStackTrace().toString());
             e.printStackTrace();
         }
-        // Stop recording
-        recorder.stop();
-        recorder.reset();
 
-        Intent intent = new Intent();
-        intent.putExtra("video_url", lastRecordedFileUrl);
-        setResult(RESULT_OK, intent);
-        finish();
+        try {
+            // Stop recording
+            recorder.stop();
+            recorder.reset();
+
+            Intent intent = new Intent();
+            intent.putExtra("video_url", lastRecordedFileUrl);
+            setResult(RESULT_OK, intent);
+            finish();
+        }
+        catch (RuntimeException e) {
+            Log.e("MyCameraApp", e.getStackTrace().toString());
+            e.printStackTrace();
+        }
     }
 
     private void updatePreview() {
@@ -429,6 +481,7 @@ public class MainActivity extends FragmentActivity {
             previewSession.setRepeatingRequest(previewBuilder.build(), null, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            Log.e("MyCameraApp", e.getStackTrace().toString());
         }
     }
 
