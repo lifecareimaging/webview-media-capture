@@ -65,6 +65,7 @@ public class MainActivity extends FragmentActivity {
     private final int CAMERA_PERMISSIONS = 10001;
     private MediaRecorder recorder;
     private boolean isRecordingVideo = false;
+    private boolean isRecordingPaused= false;
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
     private Integer sensorOrientation;
@@ -196,7 +197,7 @@ public class MainActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    startRecordingVideo();
+                    startOrResumeRecordingVideo();
                 } catch (Exception e) {
                     e.printStackTrace();
                     finish();
@@ -228,6 +229,13 @@ public class MainActivity extends FragmentActivity {
         pauseRecordingButton.hide();
         //pauseRecordingButtonParams.setMarginStart(300);
         pauseRecordingButton.setLayoutParams(pauseRecordingButtonParams);
+
+        pauseRecordingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pauseRecordingVide();
+            }
+        });
 
         stopRecordingButton = new FloatingActionButton(this);
         stopRecordingButton.setAlpha(0.66f);
@@ -336,9 +344,13 @@ public class MainActivity extends FragmentActivity {
         }
         finish();
     }
-    private void startRecordingVideo() throws Exception {
+    private void startOrResumeRecordingVideo() throws Exception {
         if (isRecordingVideo) {
+            if (isRecordingPaused){
+                resumeRecordingVide();
+            }
             return;
+
         }
         if (null == cameraDevice || !textureView.isAvailable() || null == previewsize) {
             return;
@@ -371,8 +383,10 @@ public class MainActivity extends FragmentActivity {
                         lockDeviceRotation(true);
                         // Start recording
                         recorder.start();
-                        stopRecordingButton.show();
                         recordVideoButton.hide();
+                        cancelButton.hide();
+                        stopRecordingButton.show();
+                        pauseRecordingButton.show();
                         stopRecordingButton.setAlpha(0.66f);
 
 
@@ -408,7 +422,7 @@ public class MainActivity extends FragmentActivity {
     private void TimerMethod()
     {
         Log.e("videoMaxLengthInSeconds", Integer.toString(videoMaxLengthInSeconds));
-        if (!isRecordingVideo) { return; }
+        if (!isRecordingVideo || isRecordingPaused) { return; }
         secondsElapsed++;
         if (secondsElapsed >= videoMaxLengthInSeconds) {
             stopRecordingVideo();
@@ -440,6 +454,41 @@ public class MainActivity extends FragmentActivity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_IMMERSIVE;
         decorView.setSystemUiVisibility(uiOptions);
+    }
+
+    private void pauseRecordingVide(){
+        if (isRecordingPaused){
+            return;
+        }
+
+
+        try{
+            recorder.pause();
+            isRecordingPaused = true;
+            pauseRecordingButton.hide();
+            recordVideoButton.show();
+        }
+        catch(Exception e){
+            Log.e("MyCameraApp", e.getStackTrace().toString());
+            e.printStackTrace();
+        }
+    }
+
+    private void resumeRecordingVide(){
+        if (!isRecordingPaused){
+            return;
+        }
+
+        try{
+            recorder.resume();
+            isRecordingPaused = false;
+            recordVideoButton.hide();
+            pauseRecordingButton.show();
+        }
+        catch(Exception e){
+            Log.e("MyCameraApp", e.getStackTrace().toString());
+            e.printStackTrace();
+        }
     }
 
     private void stopRecordingVideo() {
