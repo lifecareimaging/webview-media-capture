@@ -80,6 +80,13 @@ public class MainActivity extends FragmentActivity {
     private int videoMaxLengthInSeconds;
     private ViewSizeCalculator viewSizeCalculator;
     private TextView recordLengthTextView;
+    
+    // ids of image resources for buttons
+    int ic_mic_black_24dp;
+    int ic_mic_off_black_24dp;
+    int ic_pause_black_24dp;
+    int ic_radio_button_checked_black_24dp;
+    int ic_stop_black_24dp;    
 
 
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
@@ -158,11 +165,11 @@ public class MainActivity extends FragmentActivity {
         int video_pause_btn = getResources().getIdentifier("video_pause_btn","id", getPackageName());
         int video_stop_btn = getResources().getIdentifier("video_stop_btn","id", getPackageName());
 
-        int ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
-        int ic_mic_off_black_24dp = getResources().getIdentifier("ic_mic_off_black_24dp", "drawable", getPackageName());
-        int ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
-        int ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
-        int ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
+        ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
+        ic_mic_off_black_24dp = getResources().getIdentifier("ic_mic_off_black_24dp", "drawable", getPackageName());
+        ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
+        ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
+        ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
 
         cancelButton = new FloatingActionButton(this);
         cancelButton.setAlpha(0.66f);
@@ -197,7 +204,7 @@ public class MainActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    startOrResumeRecordingVideo();
+                    startRecordingVideo();
                 } catch (Exception e) {
                     e.printStackTrace();
                     finish();
@@ -233,7 +240,11 @@ public class MainActivity extends FragmentActivity {
         pauseRecordingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pauseRecordingVide();
+                if (isRecordingPaused){
+                    resumeRecordingVideo();
+                } else {
+                    pauseRecordingVideo();
+                }
             }
         });
 
@@ -344,14 +355,11 @@ public class MainActivity extends FragmentActivity {
         }
         finish();
     }
-    private void startOrResumeRecordingVideo() throws Exception {
+    private void startRecordingVideo() throws Exception {
         if (isRecordingVideo) {
-            if (isRecordingPaused){
-                resumeRecordingVide();
-            }
             return;
-
         }
+
         if (null == cameraDevice || !textureView.isAvailable() || null == previewsize) {
             return;
         }
@@ -456,7 +464,7 @@ public class MainActivity extends FragmentActivity {
         decorView.setSystemUiVisibility(uiOptions);
     }
 
-    private void pauseRecordingVide(){
+    private void pauseRecordingVideo(){
         if (isRecordingPaused){
             return;
         }
@@ -465,8 +473,7 @@ public class MainActivity extends FragmentActivity {
         try{
             recorder.pause();
             isRecordingPaused = true;
-            pauseRecordingButton.hide();
-            recordVideoButton.show();
+            pauseRecordingButton.setImageResource(ic_radio_button_checked_black_24dp);;
         }
         catch(Exception e){
             Log.e("MyCameraApp", e.getStackTrace().toString());
@@ -474,7 +481,7 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private void resumeRecordingVide(){
+    private void resumeRecordingVideo(){
         if (!isRecordingPaused){
             return;
         }
@@ -482,8 +489,7 @@ public class MainActivity extends FragmentActivity {
         try{
             recorder.resume();
             isRecordingPaused = false;
-            recordVideoButton.hide();
-            pauseRecordingButton.show();
+            pauseRecordingButton.setImageResource(ic_pause_black_24dp);;
         }
         catch(Exception e){
             Log.e("MyCameraApp", e.getStackTrace().toString());
