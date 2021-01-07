@@ -65,6 +65,7 @@ public class MainActivity extends FragmentActivity {
     private final int CAMERA_PERMISSIONS = 10001;
     private MediaRecorder recorder;
     private boolean isRecordingVideo = false;
+    private boolean isRecordingPaused= false;
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
     private Integer sensorOrientation;
@@ -79,6 +80,13 @@ public class MainActivity extends FragmentActivity {
     private int videoMaxLengthInSeconds;
     private ViewSizeCalculator viewSizeCalculator;
     private TextView recordLengthTextView;
+    
+    // ids of image resources for buttons
+    int ic_mic_black_24dp;
+    int ic_mic_off_black_24dp;
+    int ic_pause_black_24dp;
+    int ic_radio_button_checked_black_24dp;
+    int ic_stop_black_24dp;    
 
 
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
@@ -157,11 +165,11 @@ public class MainActivity extends FragmentActivity {
         int video_pause_btn = getResources().getIdentifier("video_pause_btn","id", getPackageName());
         int video_stop_btn = getResources().getIdentifier("video_stop_btn","id", getPackageName());
 
-        int ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
-        int ic_mic_off_black_24dp = getResources().getIdentifier("ic_mic_off_black_24dp", "drawable", getPackageName());
-        int ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
-        int ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
-        int ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
+        ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
+        ic_mic_off_black_24dp = getResources().getIdentifier("ic_mic_off_black_24dp", "drawable", getPackageName());
+        ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
+        ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
+        ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
 
         cancelButton = new FloatingActionButton(this);
         cancelButton.setAlpha(0.66f);
@@ -228,6 +236,17 @@ public class MainActivity extends FragmentActivity {
         pauseRecordingButton.hide();
         //pauseRecordingButtonParams.setMarginStart(300);
         pauseRecordingButton.setLayoutParams(pauseRecordingButtonParams);
+
+        pauseRecordingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isRecordingPaused){
+                    resumeRecordingVideo();
+                } else {
+                    pauseRecordingVideo();
+                }
+            }
+        });
 
         stopRecordingButton = new FloatingActionButton(this);
         stopRecordingButton.setAlpha(0.66f);
@@ -340,6 +359,7 @@ public class MainActivity extends FragmentActivity {
         if (isRecordingVideo) {
             return;
         }
+
         if (null == cameraDevice || !textureView.isAvailable() || null == previewsize) {
             return;
         }
@@ -371,8 +391,10 @@ public class MainActivity extends FragmentActivity {
                         lockDeviceRotation(true);
                         // Start recording
                         recorder.start();
-                        stopRecordingButton.show();
                         recordVideoButton.hide();
+                        cancelButton.hide();
+                        stopRecordingButton.show();
+                        pauseRecordingButton.show();
                         stopRecordingButton.setAlpha(0.66f);
 
 
@@ -408,7 +430,7 @@ public class MainActivity extends FragmentActivity {
     private void TimerMethod()
     {
         Log.e("videoMaxLengthInSeconds", Integer.toString(videoMaxLengthInSeconds));
-        if (!isRecordingVideo) { return; }
+        if (!isRecordingVideo || isRecordingPaused) { return; }
         secondsElapsed++;
         if (secondsElapsed >= videoMaxLengthInSeconds) {
             stopRecordingVideo();
@@ -440,6 +462,39 @@ public class MainActivity extends FragmentActivity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_IMMERSIVE;
         decorView.setSystemUiVisibility(uiOptions);
+    }
+
+    private void pauseRecordingVideo(){
+        if (isRecordingPaused){
+            return;
+        }
+
+
+        try{
+            recorder.pause();
+            isRecordingPaused = true;
+            pauseRecordingButton.setImageResource(ic_radio_button_checked_black_24dp);;
+        }
+        catch(Exception e){
+            Log.e("MyCameraApp", e.getStackTrace().toString());
+            e.printStackTrace();
+        }
+    }
+
+    private void resumeRecordingVideo(){
+        if (!isRecordingPaused){
+            return;
+        }
+
+        try{
+            recorder.resume();
+            isRecordingPaused = false;
+            pauseRecordingButton.setImageResource(ic_pause_black_24dp);;
+        }
+        catch(Exception e){
+            Log.e("MyCameraApp", e.getStackTrace().toString());
+            e.printStackTrace();
+        }
     }
 
     private void stopRecordingVideo() {
