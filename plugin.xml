@@ -19,12 +19,13 @@
       <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
       <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
       <uses-permission android:name="android.permission.RECORD_AUDIO" />
+      <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
       <uses-feature android:name="android.hardware.camera" android:required="false" />
       <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     </config-file>
     <resource-file target="res/values/ids.xml" src="src/android/res/values/ids.xml" />
     <resource-file target="res/drawable/ic_mic_black_24dp.xml" src="src/android/res/drawable/ic_mic_black_24dp.xml" />
-    <resource-file target="res/drawable/ic_mic_off_black_24dp.xml" src="src/android/res/drawable/ic_mic_off_black_24dp.xml" />
+    <resource-file target="res/drawable/ic_mic_off_white_24dp.xml" src="src/android/res/drawable/ic_mic_off_white_24dp.xml" />
     <resource-file target="res/drawable/ic_pause_black_24dp.xml" src="src/android/res/drawable/ic_pause_black_24dp.xml" />
     <resource-file target="res/drawable/ic_radio_button_checked_black_24dp.xml" src="src/android/res/drawable/ic_radio_button_checked_black_24dp.xml" />
     <resource-file target="res/drawable/ic_stop_black_24dp.xml" src="src/android/res/drawable/ic_stop_black_24dp.xml" />

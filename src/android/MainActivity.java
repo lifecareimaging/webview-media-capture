@@ -14,6 +14,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.AudioManager;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Handler;
@@ -83,11 +84,12 @@ public class MainActivity extends FragmentActivity {
     
     // ids of image resources for buttons
     int ic_mic_black_24dp;
-    int ic_mic_off_black_24dp;
+    int ic_mic_off_white_24dp;
     int ic_pause_black_24dp;
     int ic_radio_button_checked_black_24dp;
     int ic_stop_black_24dp;    
 
+    private Boolean isAudioMuted = false;
 
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
     private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
@@ -166,7 +168,7 @@ public class MainActivity extends FragmentActivity {
         int video_stop_btn = getResources().getIdentifier("video_stop_btn","id", getPackageName());
 
         ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
-        ic_mic_off_black_24dp = getResources().getIdentifier("ic_mic_off_black_24dp", "drawable", getPackageName());
+        ic_mic_off_white_24dp = getResources().getIdentifier("ic_mic_off_white_24dp", "drawable", getPackageName());
         ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
         ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
         ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
@@ -224,6 +226,20 @@ public class MainActivity extends FragmentActivity {
         recordAudioButtonLayoutParams.setMarginStart(250);
         recordAudioButton.setLayoutParams(recordAudioButtonLayoutParams);
 
+        recordAudioButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isAudioMuted = !isAudioMuted;
+                if (isAudioMuted) {
+                    recordAudioButton.setImageResource(ic_mic_off_white_24dp);
+                }
+                else{
+                    recordAudioButton.setImageResource(ic_mic_black_24dp);
+                }
+                setMicMuted(isAudioMuted);
+            }
+        });
+
         pauseRecordingButton = new FloatingActionButton(this);
         pauseRecordingButton.setAlpha(0.66f);
         pauseRecordingButton.setSize(1);
@@ -267,7 +283,7 @@ public class MainActivity extends FragmentActivity {
                 stopRecordingVideo();
             }
         });
-
+        
         buttonContainer.addView(cancelButton);
         buttonContainer.addView(recordVideoButton);
         buttonContainer.addView(pauseRecordingButton);
@@ -291,6 +307,16 @@ public class MainActivity extends FragmentActivity {
         setContentView(relLayout);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
         
+    }
+
+    private void setMicMuted(boolean state){
+        AudioManager myAudioManager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+
+        int workingAudioMode = myAudioManager.getMode();
+
+        myAudioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        myAudioManager.setMicrophoneMute(state);
+        myAudioManager.setMode(workingAudioMode);
     }
 
     private void prepareMediaRecorder() throws Exception {
