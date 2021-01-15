@@ -77,12 +77,15 @@ public class MainActivity extends FragmentActivity {
     private FloatingActionButton recordAudioButton;
     private FloatingActionButton pauseRecordingButton;
     private FloatingActionButton stopRecordingButton;
+    private FloatingActionButton flashLightButton;
     private int secondsElapsed=0;
     private int videoMaxLengthInSeconds;
     private ViewSizeCalculator viewSizeCalculator;
     private TextView recordLengthTextView;
     
     // ids of image resources for buttons
+    int ic_flash_off_black_24dp;
+    int ic_flash_on_black_24dp;
     int ic_mic_black_24dp;
     int ic_mic_off_white_24dp;
     int ic_pause_black_24dp;
@@ -90,6 +93,7 @@ public class MainActivity extends FragmentActivity {
     int ic_stop_black_24dp;    
 
     private Boolean isAudioMuted = false;
+    private boolean isFlashLightOn = false;
 
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
     private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
@@ -148,6 +152,60 @@ public class MainActivity extends FragmentActivity {
             }
         });
 
+        int video_cancel_btn = getResources().getIdentifier("video_cancel_btn","id", getPackageName());
+        int video_record_btn = getResources().getIdentifier("video_record_btn","id", getPackageName());
+        int video_record_audio_btn = getResources().getIdentifier("video_record_audio_btn","id", getPackageName());
+        int video_pause_btn = getResources().getIdentifier("video_pause_btn","id", getPackageName());
+        int video_stop_btn = getResources().getIdentifier("video_stop_btn","id", getPackageName());
+        int video_flashlight_btn = getResources().getIdentifier("video_flashlight_btn","id", getPackageName());
+
+        ic_flash_off_black_24dp = getResources().getIdentifier("ic_flash_off_black_24dp", "drawable", getPackageName());
+        ic_flash_on_black_24dp = getResources().getIdentifier("ic_flash_on_black_24dp", "drawable", getPackageName());
+        ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
+        ic_mic_off_white_24dp = getResources().getIdentifier("ic_mic_off_white_24dp", "drawable", getPackageName());
+        ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
+        ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
+        ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
+
+
+        LinearLayout topButtonPanel = new LinearLayout(this);
+        RelativeLayout.LayoutParams topButtonPanelParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        topButtonPanelParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        topButtonPanelParams.topMargin = 45;
+        topButtonPanelParams.leftMargin = 45;
+        topButtonPanel.setOrientation(LinearLayout.VERTICAL);
+        topButtonPanel.setGravity(Gravity.LEFT);
+        topButtonPanel.setLayoutParams(topButtonPanelParams);
+
+        flashLightButton = new FloatingActionButton(this);
+        flashLightButton.setAlpha(0.66f);
+        flashLightButton.setSize(1);
+        flashLightButton.setId(video_flashlight_btn);
+        flashLightButton.setImageResource(ic_flash_off_black_24dp);
+        flashLightButton.setBackgroundTintList(ColorStateList.valueOf(Color.argb(75,30,30,30)));
+        RelativeLayout.LayoutParams flashLightButtonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        flashLightButtonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        flashLightButton.setLayoutParams(flashLightButtonLayoutParams);
+        flashLightButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isFlashLightOn = !isFlashLightOn;
+                turnFlashlight(isFlashLightOn);
+
+                if (isFlashLightOn) {
+                    flashLightButton.setImageResource(ic_flash_on_black_24dp);
+                }
+                else{
+                    flashLightButton.setImageResource(ic_flash_off_black_24dp);
+                }
+
+            }
+        });
+
+        topButtonPanel.addView(flashLightButton);
+        relLayout.addView(topButtonPanel);
+
+
         LinearLayout controlPanel = new LinearLayout(this);
         RelativeLayout.LayoutParams controlPanelParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         controlPanelParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
@@ -160,18 +218,6 @@ public class MainActivity extends FragmentActivity {
         LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         buttonContainer.setGravity(Gravity.CENTER);
         buttonContainer.setLayoutParams(containerParams);
-
-        int video_cancel_btn = getResources().getIdentifier("video_cancel_btn","id", getPackageName());
-        int video_record_btn = getResources().getIdentifier("video_record_btn","id", getPackageName());
-        int video_record_audio_btn = getResources().getIdentifier("video_record_audio_btn","id", getPackageName());
-        int video_pause_btn = getResources().getIdentifier("video_pause_btn","id", getPackageName());
-        int video_stop_btn = getResources().getIdentifier("video_stop_btn","id", getPackageName());
-
-        ic_mic_black_24dp = getResources().getIdentifier("ic_mic_black_24dp", "drawable", getPackageName());
-        ic_mic_off_white_24dp = getResources().getIdentifier("ic_mic_off_white_24dp", "drawable", getPackageName());
-        ic_pause_black_24dp = getResources().getIdentifier("ic_pause_black_24dp", "drawable", getPackageName());
-        ic_radio_button_checked_black_24dp = getResources().getIdentifier("ic_radio_button_checked_black_24dp", "drawable", getPackageName());
-        ic_stop_black_24dp = getResources().getIdentifier("ic_stop_black_24dp", "drawable", getPackageName());
 
         cancelButton = new FloatingActionButton(this);
         cancelButton.setAlpha(0.66f);
@@ -309,6 +355,22 @@ public class MainActivity extends FragmentActivity {
         
     }
 
+    private void turnFlashlight(boolean state)
+    {
+        try {
+            if (state) {
+                previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+            }
+            else {
+                previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
+
+            }
+            previewSession.setRepeatingRequest(previewBuilder.build(), null, null);
+        } catch (CameraAccessException e) {
+            Log.e("LCCAM", e.toString());
+        }
+    }
+
     private void setMicMuted(boolean state){
         AudioManager myAudioManager = (AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 
@@ -405,6 +467,12 @@ public class MainActivity extends FragmentActivity {
             Surface recorderSurface = recorder.getSurface();
             surfaces.add(recorderSurface);
             previewBuilder.addTarget(recorderSurface);
+
+            if (isFlashLightOn)
+                previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+            else
+                previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
+
             // Start a capture session
             cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
                 @Override
@@ -494,8 +562,6 @@ public class MainActivity extends FragmentActivity {
         if (isRecordingPaused){
             return;
         }
-
-
         try{
             recorder.pause();
             isRecordingPaused = true;
@@ -549,6 +615,8 @@ public class MainActivity extends FragmentActivity {
             Log.e("MyCameraApp", e.getStackTrace().toString());
             e.printStackTrace();
         }
+
+        
     }
 
     private void updatePreview() {
@@ -603,7 +671,7 @@ public class MainActivity extends FragmentActivity {
                 //to be define later
             }
             catch (Exception e) {
-                Log.d("MyCameraApp", e.getMessage());
+                Log.e("MyCameraApp", e.getMessage());
                 throw e;
             }
 
@@ -635,23 +703,25 @@ public class MainActivity extends FragmentActivity {
     private TextureView.SurfaceTextureListener surfaceTextureListener=new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+
             openCamera(width, height);
             //mainsurface = new Surface(surface);
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
             configureTransform(width, height);
         }
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+
             return false;
         }
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
         }
     };
 
@@ -766,7 +836,7 @@ public class MainActivity extends FragmentActivity {
 
                         @Override
                         public void onConfigureFailed(CameraCaptureSession session) {
-                            Log.e("", "onConfigureFailed: Failed ");
+                            Log.e("MyCameraApp", "onConfigureFailed: Failed ");
                         }
                     }, backgroundHandler);
         } catch (CameraAccessException e) {

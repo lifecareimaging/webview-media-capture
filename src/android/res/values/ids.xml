@@ -5,4 +5,5 @@
     <item name="video_record_audio_btn" type="id"/>
     <item name="video_pause_btn" type="id"/>
     <item name="video_stop_btn" type="id"/>
+    <item name="video_flashlight_btn" type="id"/>
 </resources>
