@@ -535,6 +535,8 @@ public class MainActivity extends FragmentActivity {
             e.printStackTrace();
         }
 
+        setMicMuted(false);
+
         try {
             // Stop recording
             recorder.stop();
