@@ -29,6 +29,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
+import android.util.DisplayMetrics;
 
 import java.io.File;
 import java.io.IOException;
@@ -130,6 +131,27 @@ public class MainActivity extends FragmentActivity {
         
     }
 
+    private boolean is16x9_4x3()
+    {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
+        int orientation = getResources().getConfiguration().orientation;
+        int realHeight = metrics.heightPixels;
+        int realWidth = metrics.widthPixels;
+        float aspectRatio = 0;
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            aspectRatio = (float)realWidth / (float)realHeight;
+        } else {
+            aspectRatio = (float)realHeight / (float)realWidth;
+        }
+
+        boolean _16x9 = Math.abs(aspectRatio - 1.77777777777777) < 0.001;
+        boolean _4x3 = Math.abs(aspectRatio - 1.333333333333) < 0.001;
+
+        return _16x9 | _4x3;
+    }
+
     private void CreateLayout() {
 
         RelativeLayout relLayout = new RelativeLayout(this);
@@ -151,7 +173,7 @@ public class MainActivity extends FragmentActivity {
         LinearLayout controlPanel = new LinearLayout(this);
         RelativeLayout.LayoutParams controlPanelParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         controlPanelParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        controlPanelParams.bottomMargin = 65;
+        controlPanelParams.bottomMargin = is16x9_4x3() == true ? 65 : 140;
         controlPanel.setOrientation(LinearLayout.VERTICAL);
         controlPanel.setLayoutParams(controlPanelParams);
         controlPanel.setGravity(Gravity.CENTER_HORIZONTAL);
