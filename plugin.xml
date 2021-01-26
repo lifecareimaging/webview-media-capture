@@ -35,7 +35,7 @@
     <resource-file target="res/drawable/ic_stop_black_24dp.xml" src="src/android/res/drawable/ic_stop_black_24dp.xml" />
     
     <config-file target="AndroidManifest.xml" parent="/manifest/application">
-      <activity android:theme="@style/Theme.AppCompat.NoActionBar" android:name="com.lifecare.cordova.mediacapture.MainActivity"></activity>
+      <activity android:theme="@style/Theme.AppCompat.NoActionBar" android:name="com.lifecare.cordova.mediacapture.MainActivity" android:screenOrientation="portrait"></activity>
 
     </config-file>
     <source-file src="src/android/MediaCapture.java" target-dir="src/com/lifecare/cordova/mediacapture"/>

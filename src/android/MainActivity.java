@@ -126,7 +126,8 @@ public class MainActivity extends FragmentActivity {
 
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
-
+        
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         hideSystemViews();
 
         Intent intent = getIntent();
