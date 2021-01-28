@@ -13,6 +13,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.AudioManager;
 import android.media.CamcorderProfile;
@@ -83,7 +84,7 @@ public class MainActivity extends FragmentActivity {
     private int videoMaxLengthInSeconds;
     private ViewSizeCalculator viewSizeCalculator;
     private TextView recordLengthTextView;
-    
+
     // ids of image resources for buttons
     int ic_flash_off_black_24dp;
     int ic_flash_on_black_24dp;
@@ -255,6 +256,8 @@ public class MainActivity extends FragmentActivity {
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                turnFlashlight(false);
+                isFlashLightOn = false;
                 cancelActivity();
             }
         });
@@ -349,7 +352,7 @@ public class MainActivity extends FragmentActivity {
         stopRecordingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopRecordingVideo();
+                turnOffFlashLightAndStop();
             }
         });
         
@@ -386,11 +389,23 @@ public class MainActivity extends FragmentActivity {
             }
             else {
                 previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
-
             }
             previewSession.setRepeatingRequest(previewBuilder.build(), null, null);
         } catch (CameraAccessException e) {
-            Log.e("LCCAM", e.toString());
+            Log.e("MyCameraApp", e.toString());
+        }
+    }
+
+    private void turnOffFlashLightAndStop() {
+        if (isFlashLightOn) {
+            previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
+            try {
+                previewSession.setRepeatingRequest(previewBuilder.build(), ccCaptureCallback, null);
+            } catch (CameraAccessException e) {
+                e.printStackTrace();
+            }
+        }else {
+            stopRecordingVideo();
         }
     }
 
@@ -459,11 +474,11 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void cancelActivity() {
-
         if (isRecordingVideo) {
             File file = new File(lastRecordedFileUrl);
             file.delete();
         }
+        
         finish();
     }
     private void startRecordingVideo() throws Exception {
@@ -492,9 +507,9 @@ public class MainActivity extends FragmentActivity {
             previewBuilder.addTarget(recorderSurface);
 
             if (isFlashLightOn)
+            {
                 previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
-            else
-                previewBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
+            }
 
             // Start a capture session
             cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
@@ -527,7 +542,7 @@ public class MainActivity extends FragmentActivity {
                 }
                 @Override
                 public void onConfigureFailed( CameraCaptureSession cameraCaptureSession) {
-                    Log.e("", "onConfigureFailed: Failed");
+                    Log.e("MyCameraApp", "onConfigureFailed: Failed");
                 }
             }, backgroundHandler);
         } catch (CameraAccessException e) {
@@ -546,11 +561,10 @@ public class MainActivity extends FragmentActivity {
 
     private void TimerMethod()
     {
-        Log.e("videoMaxLengthInSeconds", Integer.toString(videoMaxLengthInSeconds));
         if (!isRecordingVideo || isRecordingPaused) { return; }
         secondsElapsed++;
         if (secondsElapsed >= videoMaxLengthInSeconds) {
-            stopRecordingVideo();
+            turnOffFlashLightAndStop();
         }
         MainActivity.this.runOnUiThread(Timer_Tick);
     }
@@ -750,6 +764,24 @@ public class MainActivity extends FragmentActivity {
         }
     };
 
+    private CameraCaptureSession.CaptureCallback ccCaptureCallback = new CameraCaptureSession.CaptureCallback() {
+        @Override
+        public void onCaptureCompleted( CameraCaptureSession session,  CaptureRequest request,  TotalCaptureResult result) {
+            stopRecordingVideo();
+            super.onCaptureCompleted(session, request, result);
+        }
+
+        @Override
+        public void onCaptureSequenceCompleted( CameraCaptureSession session, int sequenceId, long frameNumber) {
+            super.onCaptureSequenceCompleted(session, sequenceId, frameNumber);
+        }
+
+        @Override
+        public void onCaptureStarted( CameraCaptureSession session,  CaptureRequest request, long timestamp, long frameNumber) {
+            super.onCaptureStarted(session, request, timestamp, frameNumber);
+        }
+    };
+
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private CameraDevice.StateCallback stateCallback=new CameraDevice.StateCallback() {
         @Override
@@ -778,11 +810,11 @@ public class MainActivity extends FragmentActivity {
             cameraDevice.close();
             cameraDevice = null;
             cancelActivity();
-
         }
     };
 
     private void closeCamera() {
+
         try {
             mCameraOpenCloseLock.acquire();
             closePreviewSession();
