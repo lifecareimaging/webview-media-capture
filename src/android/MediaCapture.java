@@ -10,7 +10,7 @@ import org.apache.cordova.PluginResult;
 import org.apache.cordova.PermissionHelper;
 import org.json.JSONArray;
 import org.json.JSONException;
-import android.support.v4.app.ActivityCompat;
+import androidx.core.app.ActivityCompat;
 
 import java.io.File;
 import android.content.Context;

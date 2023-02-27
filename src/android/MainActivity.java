@@ -20,7 +20,7 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.v4.app.FragmentActivity;
+import androidx.fragment.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -52,7 +52,7 @@ import android.os.Build;
 import android.content.pm.ActivityInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.support.design.widget.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import android.content.res.ColorStateList;
 
