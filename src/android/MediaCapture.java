@@ -29,7 +29,7 @@ public class MediaCapture extends CordovaPlugin {
     private static final int CAMERA_PERMISSIONS = 33;
     private CallbackContext callbackContext;
     private boolean cameraClosing;
-    private String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS};
+    private String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS};
 
     private Exception lastException = null;
     private int lengthInSeconds = 60;
