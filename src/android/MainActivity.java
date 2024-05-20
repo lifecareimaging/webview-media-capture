@@ -433,12 +433,14 @@ public class MainActivity extends FragmentActivity {
             lastRecordedFileUrl = intent.getStringExtra("NEXT_VIDEO_URL");  
             recorder.setOutputFile(lastRecordedFileUrl);
 
-            //always default to full hd even thou the videosize might be different
-            CamcorderProfile profile =CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);;
-            if (viewSizeCalculator.selectedVideoSize.getHeight() ==720) {
+            CamcorderProfile profile = null;
+            if (viewSizeCalculator.selectedVideoSize.getHeight() >= 1080) {
+                CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
+            }
+            else if (viewSizeCalculator.selectedVideoSize.getHeight() == 720) {
                 profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
             }
-            else if (viewSizeCalculator.selectedVideoSize.getHeight() ==480) {
+            else if (viewSizeCalculator.selectedVideoSize.getHeight() == 480) {
                 profile = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
             }
             recorder.setVideoFrameRate(profile.videoFrameRate);
