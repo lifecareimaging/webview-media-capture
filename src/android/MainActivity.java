@@ -435,7 +435,7 @@ public class MainActivity extends FragmentActivity {
 
             CamcorderProfile profile = null;
             if (viewSizeCalculator.selectedVideoSize.getHeight() >= 1080) {
-                CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
+                profile = CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
             }
             else if (viewSizeCalculator.selectedVideoSize.getHeight() == 720) {
                 profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
