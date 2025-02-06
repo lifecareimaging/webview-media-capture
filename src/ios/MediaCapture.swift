@@ -1,11 +1,12 @@
 import Foundation
+import Capacitor
 import AVFoundation
 import Photos
 import CallKit
 import CoreTelephony
 
 @objc(MediaCapture)
-class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObserverDelegate {
+public class MediaCapture: CAPPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObserverDelegate {
     
     var partIndex = 1
     var finalOutputFileUrl: URL?
@@ -444,10 +445,10 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
         }
     }
 
-    @objc func show(_ command: CDVInvokedUrlCommand) {
+    @objc func show(_ call: CAPPluginCall) {
         self.webView?.isOpaque = false
         self.webView?.backgroundColor = UIColor.clear
-        self.getStatus(command)
+        self.getStatus(call)
     }
 
     @objc func hide(_ command: CDVInvokedUrlCommand) {
@@ -663,7 +664,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
         }
     }
 
-    @objc func getStatus(_ command: CDVInvokedUrlCommand){
+    @objc func getStatus(_ command: CAPPluginCall){
 
         let authorizationStatusVideo = AVCaptureDevice.authorizationStatus(for: AVMediaType.video);
         let authorizationStatusAudio = AVCaptureDevice.authorizationStatus(for: AVMediaType.audio);
@@ -735,8 +736,6 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
             "currentCamera": String(currentCamera)
         ]
 
-        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: status)
-        pluginResult?.setKeepCallbackAs(true)
-        commandDelegate!.send(pluginResult, callbackId:command.callbackId)
+        call.resolve(status)
     }
 }
