@@ -191,7 +191,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
     @objc func handleInterruption(_ notification: Notification) throws -> Void {
         guard let info = notification.userInfo,
             let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-            let type = AVAudioSessionInterruptionType(rawValue: typeValue) else {
+            let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
                 return
         }
 
@@ -206,7 +206,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
                     return
                 }
                 
-                let options = AVAudioSessionInterruptionOptions(rawValue: optionsValue)
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
                 if options.contains(.shouldResume) {
                     if self.captureSession!.canAddInput(audioInput) {
                         self.captureSession?.addInput(audioInput)
