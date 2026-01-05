@@ -17,7 +17,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
         let mainComposition = AVMutableComposition()
         let compositionVideoTrack = mainComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
         compositionVideoTrack?.preferredTransform = CGAffineTransform(rotationAngle: .pi / 2)
-        var time:CMTime = CMTimeMakeWithSeconds(0, 1000000)
+        var time:CMTime = CMTimeMakeWithSeconds(0, preferredTimescale: 1000000)
 
         for (index, videoAsset) in arrayVideos.enumerated() {
             let atTime = time
@@ -25,12 +25,12 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
             let videoTracks = videoAsset.tracks(withMediaType: .video)
             
             if(videoTracks.count > 0) {
-                try! compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(kCMTimeZero, videoAsset.duration), of: videoTracks[0], at: atTime)
+                try! compositionVideoTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoTracks[0], at: atTime)
             }
             
             if(audioTracks.count > 0) {
                 let soundtrackTrack = mainComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-                try! soundtrackTrack?.insertTimeRange(CMTimeRangeMake(kCMTimeZero, videoAsset.duration), of: audioTracks[0], at: atTime)
+                try! soundtrackTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: audioTracks[0], at: atTime)
             }
 
             time = CMTimeAdd(time, videoAsset.duration)
@@ -510,7 +510,7 @@ class MediaCapture : CDVPlugin, AVCaptureFileOutputRecordingDelegate, CXCallObse
     @objc func record(_ command: CDVInvokedUrlCommand) {
         UIApplication.shared.isIdleTimerDisabled = true
 
-        videoFileOutput?.movieFragmentInterval = kCMTimeInvalid
+        videoFileOutput?.movieFragmentInterval = CMTime.invalid
         videoFileOutput?.startRecording(to: outputFileUrl! as URL, recordingDelegate: self)
         self.getStatus(command)
     }
